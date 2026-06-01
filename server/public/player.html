@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Questbound Player Card</title>
+</head>
+<body>
+  <h1>Questbound Player Card</h1>
+
+  <button onclick="loadPlayer()">Refresh Player</button>
+
+  <pre id="output"></pre>
+  
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    async function loadPlayer() {
+      const res = await fetch("/players");
+      const players = await res.json();
+ 
+      const player = players.find(p => p.id === 1);
+
+      document.getElementById("output").textContent =
+        JSON.stringify(player, null, 2);
+    }
+
+    socket.on("playersUpdated", (players) => {
+     
+        const player = players.find(p => p.id === 1);
+        document.getElementById("output").textContent =
+            JSON.stringify(player, null, 2);
+        });
+    loadPlayer();
+  </script>
+</body>
+</html>

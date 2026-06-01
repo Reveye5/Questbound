@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Questbound DM Dashboard</title>
+</head>
+<body>
+  <h1>Questbound DM Dashboard</h1>
+
+  <button onclick="damagePlayer()">Damage Louis -5 HP</button>
+  <button onclick="healPlayer()">Heal Louis +5 HP</button>
+  <button onclick="loadPlayers()">View Players</button>
+
+  <pre id="output"></pre>
+
+  <script>
+    async function damagePlayer() {
+      const res = await fetch("/damage/1/5");
+      const data = await res.json();
+      document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function healPlayer() {
+      const res = await fetch("/heal/1/5");
+      const data = await res.json();
+      document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function loadPlayers() {
+      const res = await fetch("/players");
+      const data = await res.json();
+      document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+    }
+  </script>
+</body>
+</html>
