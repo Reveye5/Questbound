@@ -8,11 +8,31 @@
 
   <button onclick="damagePlayer()">Damage Louis -5 HP</button>
   <button onclick="healPlayer()">Heal Louis +5 HP</button>
+  <button onclick="giveSword()">Give Rusty Sword</button>
+  <button onclick="givePotion()">Give Health Potion</button>
+  <button onclick="giveLeatherarmor()">Give Leather Armor</button>
+  <button onclick="removeSword()">Remove Rusty Sword</button>
   <button onclick="loadPlayers()">View Players</button>
+
+  <h2>Item Control</h2>
+
+  <select id="itemSelect">
+    <option>Loading items...</option>
+  </select>
+
+  <button onclick="giveSelectedItem()">Give Selected Item</button>
+  <button onclick="removeSelectedItem()">Remove Selected Item</button>
 
   <pre id="output"></pre>
 
+  <script src="/socket.io/socket.io.js"></script>
+
   <script>
+    const socket = io();
+
+    socket.on("connect", () => {
+      console.log("DM dashboard connected to server");
+    });
     async function damagePlayer() {
       const res = await fetch("/damage/1/5");
       const data = await res.json();
@@ -30,6 +50,68 @@
       const data = await res.json();
       document.getElementById("output").textContent = JSON.stringify(data, null, 2);
     }
+
+    async function giveSword() {
+      const res = await fetch("/giveitem/1/ITEM-001");
+      const data = await res.json();
+      document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function giveLeatherarmor() {
+      const res = await fetch("/giveitem/1/ITEM-002");
+      const data = await res.json();
+      document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function givePotion() {
+      const res = await fetch("/giveitem/1/ITEM-003");
+      const data = await res.json();
+      document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function removeSword() {
+      const res = await fetch("/removeitem/1/ITEM-001");
+      const data = await res.json();
+      document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function loadItems() {
+  const res = await fetch("/items");
+  const items = await res.json();
+
+  const itemSelect = document.getElementById("itemSelect");
+  itemSelect.innerHTML = "";
+
+  items.forEach(item => {
+    const option = document.createElement("option");
+    option.value = item.id;
+    option.textContent = `${item.name} (${item.type})`;
+    itemSelect.appendChild(option);
+  });
+}
+
+async function giveSelectedItem() {
+  const itemId = document.getElementById("itemSelect").value;
+
+  const res = await fetch(`/giveitem/1/${itemId}`);
+  const data = await res.json();
+
+  document.getElementById("output").textContent =
+    JSON.stringify(data, null, 2);
+}
+
+async function removeSelectedItem() {
+  const itemId = document.getElementById("itemSelect").value;
+
+  const res = await fetch(`/removeitem/1/${itemId}`);
+  const data = await res.json();
+
+  document.getElementById("output").textContent =
+    JSON.stringify(data, null, 2);
+}
+
+loadItems();
+
   </script>
 </body>
 </html>

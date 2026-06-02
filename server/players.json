@@ -4,6 +4,7 @@
     "name": "louis",
     "class": "mechanic",
     "level": 1,
-    "hp": 20
+    "hp": 55,
+    "inventory": []
   }
 ]

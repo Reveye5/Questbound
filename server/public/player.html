@@ -9,26 +9,37 @@
   <button onclick="loadPlayer()">Refresh Player</button>
 
   <pre id="output"></pre>
-  
+
   <script src="/socket.io/socket.io.js"></script>
+
   <script>
     const socket = io();
+
+    function showPlayer(player) {
+      document.getElementById("output").textContent =
+`Name: ${player.name}
+Class: ${player.class}
+Level: ${player.level}
+HP: ${player.hp}
+
+Inventory:
+${player.inventory && player.inventory.length > 0 ? player.inventory.join("\n") : "Empty"}`;
+    }
+
     async function loadPlayer() {
       const res = await fetch("/players");
       const players = await res.json();
- 
       const player = players.find(p => p.id === 1);
 
-      document.getElementById("output").textContent =
-        JSON.stringify(player, null, 2);
+      showPlayer(player);
     }
 
     socket.on("playersUpdated", (players) => {
-     
-        const player = players.find(p => p.id === 1);
-        document.getElementById("output").textContent =
-            JSON.stringify(player, null, 2);
-        });
+      const player = players.find(p => p.id === 1);
+
+      showPlayer(player);
+    });
+
     loadPlayer();
   </script>
 </body>

@@ -28,6 +28,17 @@ function savePlayers(players) {
     fs.writeFileSync("./players.json", JSON.stringify(players, null, 2));
 }
 
+function loadItems() {
+    return JSON.parse(
+        fs.readFileSync("./items.json")
+    );
+}
+
+app.get("/items", (req, res) => {
+    const items = loadItems();
+    res.json(items);
+});
+
 app.get("/damage/:id/:amount", (req, res) =>
 {
     const playerID = Number (req. params.id);
@@ -57,28 +68,95 @@ app.get("/damage/:id/:amount", (req, res) =>
 });    
 
 app.get("/heal/:id/:amount", (req, res) => {
-    const playerID = Number (req.params.id);
-    const heal = Number (req.params.amount);
-    
-    const players = JSON.parse(
-        fs.readFileSync("./players.json")
-    );
+    const playerId = Number(req.params.id);
+    const heal = Number(req.params.amount);
 
-    const player = players.find(p => p.id === playerID);
+    const players = loadPlayers();
+    const player = players.find(p => p.id === playerId);
 
     if (!player) {
         return res.status(404).json({ error: "Player not found" });
     }
 
     player.hp += heal;
-    fs.writeFileSync("./players.json", JSON.stringify(players, null, 2));
-    
+
     savePlayers(players);
 
     io.emit("playersUpdated", players);
 
     res.json(player);
 });
+
+   
+    app.get("/giveitem/:playerId/:itemId", (req, res) => {
+
+    const playerId = Number(req.params.playerId);
+    const itemId = req.params.itemId;
+
+    const players = loadPlayers();
+    const items = loadItems();
+
+    const player = players.find(p => p.id === playerId);
+    const item = items.find(i => i.id === itemId);
+
+    if (!player) {
+        return res.status(404).json({ error: "Player not found" });
+    }
+
+    if (!item) {
+        return res.status(404).json({ error: "Item not found" });
+    }
+
+    if (!player.inventory) {
+        player.inventory = [];
+    }
+
+    player.inventory.push(item.id);
+
+    savePlayers(players);
+
+    io.emit("playersUpdated", players);
+
+    res.json({
+        message: `${item.name} added to ${player.name}'s inventory.`,
+        player: player
+    });
+
+});
+app.get("/removeitem/:playerId/:itemId", (req, res) => {
+    const playerId = Number(req.params.playerId);
+    const itemId = req.params.itemId;
+
+    const players = loadPlayers();
+    const player = players.find(p => p.id === playerId);
+
+    if (!player) {
+        return res.status(404).json({ error: "Player not found" });
+    }
+
+    if (!player.inventory) {
+        player.inventory = [];
+    }
+
+    const itemIndex = player.inventory.indexOf(itemId);
+
+    if (itemIndex === -1) {
+        return res.status(404).json({ error: "Item not in inventory" });
+    }
+
+    player.inventory.splice(itemIndex, 1);
+
+    savePlayers(players);
+
+    io.emit("playersUpdated", players);
+
+    res.json({
+        message: `${itemId} removed from ${player.name}'s inventory.`,
+        player: player
+    });
+});
+
+
 
 io.on("connection", (socket) => {
     console.log("A Questbound device connected: ");

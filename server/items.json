@@ -1,0 +1,27 @@
+[
+    {
+        "id": "ITEM-001",
+        "name": "rusty sword",
+        "description": "A dull, rusty sword",
+        "value": 5,
+        "type": "weapon",
+        "damage": 5
+    },
+    {
+        "id": "ITEM-002",
+        "name": "leather armor",
+        "description": "Basic leather armor",
+        "value": 10,
+        "type": "armor",
+        "defense": 3
+    },
+    {
+        "id": "ITEM-003",
+        "name": "health potion",
+        "description": "Restores 10 HP",
+        "value": 15,
+        "type": "consumable",
+        "heal": 10
+    }
+
+]
