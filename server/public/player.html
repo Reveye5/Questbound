@@ -2,9 +2,18 @@
 <html>
 <head>
   <title>Questbound Player Card</title>
+  <h2>Request to Join Campaign</h2>
+  <input id="joinName" placeholder="Player Name">
+  <input id="joinClass" placeholder="Class">
+  <button onclick="requestJoin()">Request to Join</button>
+  <p id="joinStatus"></p>
 </head>
 <body>
   <h1>Questbound Player Card</h1>
+
+  <lable>Select Character:</lable>
+  <select id="playerSelect"></select>
+  <button onclick="loadPlayer()">Load Player</button>
 
   <button onclick="loadPlayer()">Refresh Player</button>
 
@@ -14,6 +23,26 @@
 
   <script>
     const socket = io();
+
+    let currentPlayerId = null
+
+    async function requestJoin() {
+      const joinRequest = {
+        name: document.getElementById("joinName").value,
+        class: document.getElementById("joinClass").value
+      };
+
+      const res = await fetch("/requestjoin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(joinRequest)
+      });
+
+      const data = await res.json();
+      document.getElementById("joinStatus").textContent = data.message;
+    }
 
     async function showPlayer(player) {
         const itemRes = await fetch("/items");
@@ -38,17 +67,34 @@ ${inventoryText}`;
     async function loadPlayer() {
       const res = await fetch("/players");
       const players = await res.json();
-      const player = players.find(p => p.id === 1);
+      currentPlayerId = Number(document.getElementById("playerSelect").value)
+      const player = players.find(p => p.id === currentPlayerId);
 
       await showPlayer(player);
     }
 
     socket.on("playersUpdated", async (players) => {
-      const player = players.find(p => p.id === 1);
+      const player = players.find(p => p.id === currentPlayerId);
 
       await showPlayer(player);
     });
 
+    async function loadPlayerList() {
+      const res = await fetch("/players");
+      const players = await res.json();
+
+      const Select = document.getElementById("playerSelect");
+      Select.innerHTML = "";
+
+      players.forEach(player => {
+        const option = document.createElement("option");
+        option.value = player.id;
+        option.textContent = `${player.name} (${player.class})`;
+        Select.appendChild(option);
+      });
+    }
+
+    loadPlayerList();
     loadPlayer();
   </script>
 </body>

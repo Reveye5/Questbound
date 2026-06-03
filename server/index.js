@@ -21,6 +21,95 @@ app.get("/players", (req, res) => {
     res.json(players);
 });      
 
+app.post("/requestjoin", (req, res) => {
+    const requests = loadJoinRequests();
+
+    const newRequest = {
+        id: `REQ-${Date.now()}`,
+        name: req.body.name,
+        class: req.body.class,
+        status: "pending"
+    };
+
+    requests.push(newRequest);
+    saveJoinRequests(requests);
+    io.emit("joinRequestsUpdated", requests);
+
+    res.json({
+        message: `${newRequest.name} requested to join.`,
+        request: newRequest
+    });
+});
+
+app.post("/approvejoin/", (req, res) => {
+    const requestId = req.body.requestId;
+    const requests = loadJoinRequests();
+    const players = loadPlayers();
+    const request = requests.find(r => r.id === requestId);
+    if (!request) {
+        return res.status(404).json({ error: "Join request not found" });
+    }
+
+    const newPlayer = {
+        id: players.length + 1,
+        name: request.name,
+        class: request.class,
+        hp: 100,
+        level: 1,
+        inventory: []
+    };
+
+    players.push(newPlayer);
+
+    const updatedRequests = requests.filter(r => r.id !== requestId);
+
+    savePlayers(players);
+    saveJoinRequests(updatedRequests);
+
+    io.emit("playersUpdated", players);
+    io.emit("joinRequestsUpdated", updatedRequests);
+
+    res.json({
+        message: `${newPlayer.name} approved and added to campaign.`,
+        player: newPlayer,
+        requests: updatedRequests
+    });
+});
+
+app.post("/denyjoin/", (req, res) => {
+    const requestId = req.body.requestId;
+    const requests = loadJoinRequests();
+    const request = requests.find(r => r.id === requestId);
+  
+    if (!request) {
+        return res.status(404).json({ error: "Join request not found" });
+    }
+    const updatedRequests = requests.filter(r => r.id !== requestId);
+    saveJoinRequests(updatedRequests);
+    io.emit("joinRequestsUpdated", updatedRequests);
+    res.json({
+        message: `${request.name}'s request was denied.`,
+        requests: updatedRequests
+    });
+});
+
+app.post("/removeplayer/", (req, res) => {
+    const playerId = Number(req.body.playerId);
+
+    const players = loadPlayers();
+    const Player = players.find(p => p.id === playerId);
+    if (!Player) {
+        return res.status(404).json({ error: "Player not found" });
+    }
+    const updatedPlayers = players.filter(p => p.id !== playerId);
+    savePlayers(updatedPlayers);
+    io.emit("playersUpdated", updatedPlayers);
+    res.json({
+        message: `${Player.name} was removed from the campaign.`,
+        players: updatedPlayers
+    });
+});
+
 function loadPlayers() {
     return JSON.parse(fs.readFileSync("./players.json"));
 }
@@ -73,7 +162,7 @@ app.post("/createitem", (req, res) => {
     saveItems(items);
     io.emit("itemsUpdated", items);
     res.json({
-        message: '${newItem.name} created.',
+        message: `${newItem.name} created.`,
         item: newItem
     });
 });

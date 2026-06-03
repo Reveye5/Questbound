@@ -9,5 +9,23 @@
       "ITEM-001",
       "ITEM-004"
     ]
+  },
+  {
+    "id": 2,
+    "name": "test player",
+    "class": "warrior",
+    "hp": 100,
+    "level": 1,
+    "inventory": []
+  },
+  {
+    "id": 3,
+    "name": "test charecter",
+    "class": "accountant",
+    "hp": 100,
+    "level": 1,
+    "inventory": [
+      "ITEM-002"
+    ]
   }
 ]

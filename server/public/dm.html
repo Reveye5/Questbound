@@ -16,6 +16,13 @@
     <option>Loading players...</option>
   </select>
 
+  <h2>Join Requests</h2>
+
+  <button onclick="loadJoinRequests()">View Join Requests</button>
+  <div id="joinRequests"></div>
+
+  <button onclick="removeSelectedPlayer()">Remove Selected Player</button>
+
   <h2>Item Control</h2>
 
   <select id="itemSelect">
@@ -148,8 +155,84 @@ async function createCustomItem() {
   await loadItems();
 }
 
+async function loadJoinRequests() {
+  const res = await fetch("/joinrequests");
+  const requests = await res.json();
+
+  const box = document.getElementById("joinRequests");
+  box.innerHTML = "";
+
+  requests.forEach(request => {
+    const div = document.createElement("div");
+
+    div.innerHTML = `
+      <p>${request.name} - ${request.class}</p>
+      <button onclick="approveJoin('${request.id}')">Approve</button>
+      <button onclick="denyJoin('${request.id}')">Deny</button>
+    `;
+
+    box.appendChild(div);
+  });
+}
+
+async function approveJoin(requestId) {
+  const res = await fetch("/approvejoin", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ requestId: requestId })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("output").textContent =
+    JSON.stringify(data, null, 2);
+
+  await loadJoinRequests();
+  await loadPlayerList();
+}
+
+async function denyJoin(requestId) {
+  const res = await fetch("/denyjoin", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ requestId: requestId })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("output").textContent =
+    JSON.stringify(data, null, 2);
+
+  await loadJoinRequests();
+}
+
+async function removeSelectedPlayer() {
+  const playerId = document.getElementById("playerSelect").value;
+
+  const res = await fetch(`/removeplayer/${playerId}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ playerId: playerId })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("output").textContent =
+    JSON.stringify(data, null, 2);
+
+  await loadPlayerList();
+}
+
+
 loadItems();
 loadPlayerList();
+loadJoinRequests();
 
   </script>
 </body>
