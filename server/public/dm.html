@@ -8,11 +8,13 @@
 
   <button onclick="damagePlayer()">Damage Louis -5 HP</button>
   <button onclick="healPlayer()">Heal Louis +5 HP</button>
-  <button onclick="giveSword()">Give Rusty Sword</button>
-  <button onclick="givePotion()">Give Health Potion</button>
-  <button onclick="giveLeatherarmor()">Give Leather Armor</button>
-  <button onclick="removeSword()">Remove Rusty Sword</button>
   <button onclick="loadPlayers()">View Players</button>
+
+  <h2>Player Control</h2>
+
+  <select id="playerSelect">
+    <option>Loading players...</option>
+  </select>
 
   <h2>Item Control</h2>
 
@@ -20,6 +22,16 @@
     <option>Loading items...</option>
   </select>
 
+  <h2>Create Custom Item </h2>
+
+  <input id="ItemName" placeholder="Item Name">
+  <input id="ItemType" placeholder="Type: Weapon, Potion, armor">
+  <input id="ItemDescription" placeholder="Item Description">
+  <input id="ItemDamage" placeholder="Damage" type="number">
+  <input id="ItemHeal" placeholder="Heal" type="number">
+
+  <button onclick="createCustomItem()">Create Custom Item</button>
+  <button onclick="createNewItem()">Create Item</button>
   <button onclick="giveSelectedItem()">Give Selected Item</button>
   <button onclick="removeSelectedItem()">Remove Selected Item</button>
 
@@ -34,43 +46,21 @@
       console.log("DM dashboard connected to server");
     });
     async function damagePlayer() {
-      const res = await fetch("/damage/1/5");
+      const playerId = document.getElementById("playerSelect").value;
+      const res = await fetch(`/damage/${playerId}/5`);
       const data = await res.json();
       document.getElementById("output").textContent = JSON.stringify(data, null, 2);
     }
 
     async function healPlayer() {
-      const res = await fetch("/heal/1/5");
+      const playerId = document.getElementById("playerSelect").value;
+      const res = await fetch(`/heal/${playerId}/5`);
       const data = await res.json();
       document.getElementById("output").textContent = JSON.stringify(data, null, 2);
     }
 
     async function loadPlayers() {
       const res = await fetch("/players");
-      const data = await res.json();
-      document.getElementById("output").textContent = JSON.stringify(data, null, 2);
-    }
-
-    async function giveSword() {
-      const res = await fetch("/giveitem/1/ITEM-001");
-      const data = await res.json();
-      document.getElementById("output").textContent = JSON.stringify(data, null, 2);
-    }
-
-    async function giveLeatherarmor() {
-      const res = await fetch("/giveitem/1/ITEM-002");
-      const data = await res.json();
-      document.getElementById("output").textContent = JSON.stringify(data, null, 2);
-    }
-
-    async function givePotion() {
-      const res = await fetch("/giveitem/1/ITEM-003");
-      const data = await res.json();
-      document.getElementById("output").textContent = JSON.stringify(data, null, 2);
-    }
-
-    async function removeSword() {
-      const res = await fetch("/removeitem/1/ITEM-001");
       const data = await res.json();
       document.getElementById("output").textContent = JSON.stringify(data, null, 2);
     }
@@ -91,9 +81,10 @@
 }
 
 async function giveSelectedItem() {
+  const playerId = document.getElementById("playerSelect").value;
   const itemId = document.getElementById("itemSelect").value;
 
-  const res = await fetch(`/giveitem/1/${itemId}`);
+  const res = await fetch(`/giveitem/${playerId}/${itemId}`);
   const data = await res.json();
 
   document.getElementById("output").textContent =
@@ -101,16 +92,64 @@ async function giveSelectedItem() {
 }
 
 async function removeSelectedItem() {
+  const playerId = document.getElementById("playerSelect").value;
   const itemId = document.getElementById("itemSelect").value;
 
-  const res = await fetch(`/removeitem/1/${itemId}`);
+  const res = await fetch(`/removeitem/${playerId}/${itemId}`);
   const data = await res.json();
 
   document.getElementById("output").textContent =
     JSON.stringify(data, null, 2);
 }
 
+async function loadPlayerList() {
+
+    const res = await fetch("/players");
+
+    const players = await res.json();
+
+    const playerSelect =
+        document.getElementById("playerSelect");
+
+    playerSelect.innerHTML = "";
+
+    players.forEach(player => {
+
+        const option =
+            document.createElement("option");
+
+        option.value = player.id;
+
+        option.textContent =
+            player.name;
+
+        playerSelect.appendChild(option);
+
+    });
+
+}
+
+async function createCustomItem() {
+  const name = document.getElementById("ItemName").value;
+  const type = document.getElementById("ItemType").value;
+  const description = document.getElementById("ItemDescription").value;
+  const damage = parseInt(document.getElementById("ItemDamage").value) || 0;
+  const heal = parseInt(document.getElementById("ItemHeal").value) || 0;
+
+  const res = await fetch("/createitem", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ name, type, description, damage, heal })
+  });
+  const data = await res.json();
+  document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+  await loadItems();
+}
+
 loadItems();
+loadPlayerList();
 
   </script>
 </body>

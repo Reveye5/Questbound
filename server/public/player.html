@@ -15,7 +15,16 @@
   <script>
     const socket = io();
 
-    function showPlayer(player) {
+    async function showPlayer(player) {
+        const itemRes = await fetch("/items");
+        const allItems = await itemRes.json();
+
+        const inventoryText = player.inventory && player.inventory.length > 0
+            ? player.inventory.map(itemId => {
+                const item = allItems.find(i => i.id === itemId);
+                return item ? `${item.name} (${item.type})` : `Unknown Item (ID: ${itemId})`;
+            }).join("\n")
+            : "Empty";
       document.getElementById("output").textContent =
 `Name: ${player.name}
 Class: ${player.class}
@@ -23,7 +32,7 @@ Level: ${player.level}
 HP: ${player.hp}
 
 Inventory:
-${player.inventory && player.inventory.length > 0 ? player.inventory.join("\n") : "Empty"}`;
+${inventoryText}`;
     }
 
     async function loadPlayer() {
@@ -31,13 +40,13 @@ ${player.inventory && player.inventory.length > 0 ? player.inventory.join("\n") 
       const players = await res.json();
       const player = players.find(p => p.id === 1);
 
-      showPlayer(player);
+      await showPlayer(player);
     }
 
-    socket.on("playersUpdated", (players) => {
+    socket.on("playersUpdated", async (players) => {
       const player = players.find(p => p.id === 1);
 
-      showPlayer(player);
+      await showPlayer(player);
     });
 
     loadPlayer();

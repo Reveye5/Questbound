@@ -5,6 +5,7 @@ const { Server } = require("socket.io");
 const app = express();
 const port = 3000;
 app.use(express.static("public"));
+app.use(express.json());
 const server = http.createServer(app);
 const io = new Server(server);
 
@@ -34,9 +35,47 @@ function loadItems() {
     );
 }
 
+function saveItems(items) {
+    fs.writeFileSync("./items.json", JSON.stringify(items, null, 2));
+}
+
+function loadJoinRequests() {
+    return JSON.parse(
+        fs.readFileSync("./joinRequests.json")
+    );
+}
+
+function saveJoinRequests(requests) {
+    fs.writeFileSync("./joinRequests.json", JSON.stringify(requests, null, 2));
+}
+
+app.get("/joinrequests", (req, res) => {
+    const requests = loadJoinRequests();
+    res.json(requests);
+});
+
 app.get("/items", (req, res) => {
     const items = loadItems();
     res.json(items);
+});
+
+app.post("/createitem", (req, res) => {
+    const items = loadItems();
+    const newItem = {
+        id: `ITEM-${String(items.length + 1).padStart(3, "0")}`,
+        name: req.body.name,
+        description: req.body.description,
+        type: req.body.type,
+        damage: Number(req.body.damage) || 0,
+        heal: Number(req.body.heal) || 0
+    };
+    items.push(newItem);
+    saveItems(items);
+    io.emit("itemsUpdated", items);
+    res.json({
+        message: '${newItem.name} created.',
+        item: newItem
+    });
 });
 
 app.get("/damage/:id/:amount", (req, res) =>

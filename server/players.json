@@ -4,7 +4,10 @@
     "name": "louis",
     "class": "mechanic",
     "level": 1,
-    "hp": 55,
-    "inventory": []
+    "hp": 50,
+    "inventory": [
+      "ITEM-001",
+      "ITEM-004"
+    ]
   }
 ]
