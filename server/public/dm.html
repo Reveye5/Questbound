@@ -10,6 +10,13 @@
   <button onclick="healPlayer()">Heal Louis +5 HP</button>
   <button onclick="loadPlayers()">View Players</button>
 
+<h2>Campaign Control</h2>
+
+<select id="dmCampaignSelect"
+onchange="campaignChanged()">
+  <option>Loading campaigns...</option>
+</select>
+
   <h2>Player Control</h2>
 
   <select id="playerSelect">
@@ -31,13 +38,7 @@
 
 <button onclick="createCampaign()">Create Campaign</button>
 
-<h2>Campaign Control</h2>
 
-<select id="dmCampaignSelect"
-onchange="loadJoinRequests()"
-loadPlayerList();">
-  <option>Loading campaigns...</option>
-</select>
 
   <h2>Item Control</h2>
 
@@ -103,6 +104,11 @@ loadPlayerList();">
   });
 }
 
+async function campaignChanged() {
+  await loadPlayerList();
+  await loadJoinRequests();
+}
+
 async function loadCampaigns() {
   const res = await fetch("/campaigns");
   const campaigns = await res.json();
@@ -123,8 +129,8 @@ async function loadCampaigns() {
       `${campaign.name} - DM: ${campaign.dm}`;
 
     select.appendChild(option);
-
   });
+  await campaignChanged();
 }
 
 async function giveSelectedItem() {
@@ -156,7 +162,13 @@ async function loadPlayerList() {
     const players = await res.json();
     const selectedCampaignId = document.getElementById("dmCampaignSelect").value;
     
-    const filteredPlayers = players.filter(p => p.campaignId === selectedCampaignId);
+    const filteredPlayers = players.filter(
+      player => player.campaignId && player.campaignId === selectedCampaignId);
+
+      console.log("Selected Campaign:", selectedCampaignId);
+      console.log("All Players:", players);
+      console.log("Filtered Players:", filteredPlayers,
+      filteredPlayers);
 
     const playerSelect =
         document.getElementById("playerSelect");
@@ -301,9 +313,10 @@ async function removeSelectedPlayer() {
 
 
 loadItems();
+loadCampaigns()
 loadPlayerList();
 loadJoinRequests();
-loadCampaigns();
+
 
   </script>
 </body>
