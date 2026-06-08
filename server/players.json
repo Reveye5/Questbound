@@ -1,31 +1,47 @@
 [
   {
     "id": 1,
-    "name": "louis",
-    "class": "mechanic",
+    "name": "dave",
+    "class": "employer",
+    "hp": 100,
     "level": 1,
-    "hp": 50,
-    "inventory": [
-      "ITEM-001",
-      "ITEM-004"
-    ]
+    "inventory": [],
+    "campaignId": "CAMP-001"
   },
   {
     "id": 2,
-    "name": "test player",
-    "class": "warrior",
+    "name": "thisguy",
+    "class": "doer",
     "hp": 100,
     "level": 1,
-    "inventory": []
+    "inventory": [],
+    "campaignId": "CAMP-002"
   },
   {
     "id": 3,
-    "name": "test charecter",
-    "class": "accountant",
+    "name": "yo",
+    "class": "him",
     "hp": 100,
     "level": 1,
-    "inventory": [
-      "ITEM-002"
-    ]
+    "inventory": [],
+    "campaignId": "CAMP-001"
+  },
+  {
+    "id": 4,
+    "name": "ihugyf",
+    "class": ".mkn,j",
+    "hp": 100,
+    "level": 1,
+    "inventory": [],
+    "campaignId": "CAMP-002"
+  },
+  {
+    "id": 5,
+    "name": "him",
+    "class": "this guy",
+    "hp": 100,
+    "level": 1,
+    "inventory": [],
+    "campaignId": "CAMP-001"
   }
 ]

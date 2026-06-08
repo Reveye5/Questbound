@@ -1,0 +1,14 @@
+[
+  {
+    "id": "CAMP-001",
+    "name": "Tutorial Campaign",
+    "description": "A simple campaign to introduce new players to the game mechanics.",
+    "dm": "Akhronose"
+  },
+  {
+    "id": "CAMP-002",
+    "name": "tutorial 2",
+    "dm": "lou",
+    "description": "test 2"
+  }
+]

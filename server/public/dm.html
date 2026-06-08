@@ -16,12 +16,28 @@
     <option>Loading players...</option>
   </select>
 
+  <button onclick="removeSelectedPlayer()">Remove Selected Player</button>
+  
   <h2>Join Requests</h2>
 
   <button onclick="loadJoinRequests()">View Join Requests</button>
   <div id="joinRequests"></div>
 
-  <button onclick="removeSelectedPlayer()">Remove Selected Player</button>
+<h2>Create Campaign</h2>
+
+<input id="campaignName" placeholder="Campaign Name">
+<input id="campaignDM" placeholder="DM Name">
+<input id="campaignDescription" placeholder="Description">
+
+<button onclick="createCampaign()">Create Campaign</button>
+
+<h2>Campaign Control</h2>
+
+<select id="dmCampaignSelect"
+onchange="loadJoinRequests()"
+loadPlayerList();">
+  <option>Loading campaigns...</option>
+</select>
 
   <h2>Item Control</h2>
 
@@ -87,6 +103,30 @@
   });
 }
 
+async function loadCampaigns() {
+  const res = await fetch("/campaigns");
+  const campaigns = await res.json();
+
+  const select =
+    document.getElementById("dmCampaignSelect");
+
+  select.innerHTML = "";
+
+  campaigns.forEach(campaign => {
+
+    const option =
+      document.createElement("option");
+
+    option.value = campaign.id;
+
+    option.textContent =
+      `${campaign.name} - DM: ${campaign.dm}`;
+
+    select.appendChild(option);
+
+  });
+}
+
 async function giveSelectedItem() {
   const playerId = document.getElementById("playerSelect").value;
   const itemId = document.getElementById("itemSelect").value;
@@ -114,13 +154,16 @@ async function loadPlayerList() {
     const res = await fetch("/players");
 
     const players = await res.json();
+    const selectedCampaignId = document.getElementById("dmCampaignSelect").value;
+    
+    const filteredPlayers = players.filter(p => p.campaignId === selectedCampaignId);
 
     const playerSelect =
         document.getElementById("playerSelect");
 
     playerSelect.innerHTML = "";
 
-    players.forEach(player => {
+    filteredPlayers.forEach(player => {
 
         const option =
             document.createElement("option");
@@ -159,10 +202,14 @@ async function loadJoinRequests() {
   const res = await fetch("/joinrequests");
   const requests = await res.json();
 
+  const selectedCampaignId = document.getElementById("dmCampaignSelect").value;
+
+  const filteredRequests = requests.filter(r => r.campaignId === selectedCampaignId);
+
   const box = document.getElementById("joinRequests");
   box.innerHTML = "";
 
-  requests.forEach(request => {
+  filteredRequests.forEach(request => {
     const div = document.createElement("div");
 
     div.innerHTML = `
@@ -173,6 +220,29 @@ async function loadJoinRequests() {
 
     box.appendChild(div);
   });
+}
+
+async function createCampaign() {
+  const newCampaign = {
+    name: document.getElementById("campaignName").value,
+    dm: document.getElementById("campaignDM").value,
+    description: document.getElementById("campaignDescription").value
+  };
+
+  const res = await fetch("/createcampaign", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(newCampaign)
+  });
+
+  const data = await res.json();
+
+  document.getElementById("output").textContent =
+    JSON.stringify(data, null, 2);
+
+  await loadCampaigns();
 }
 
 async function approveJoin(requestId) {
@@ -213,7 +283,7 @@ async function denyJoin(requestId) {
 async function removeSelectedPlayer() {
   const playerId = document.getElementById("playerSelect").value;
 
-  const res = await fetch(`/removeplayer/${playerId}`, {
+  const res = await fetch("/removeplayer", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -233,6 +303,7 @@ async function removeSelectedPlayer() {
 loadItems();
 loadPlayerList();
 loadJoinRequests();
+loadCampaigns();
 
   </script>
 </body>

@@ -28,6 +28,7 @@ app.post("/requestjoin", (req, res) => {
         id: `REQ-${Date.now()}`,
         name: req.body.name,
         class: req.body.class,
+        campaignId: req.body.campaignId,
         status: "pending"
     };
 
@@ -56,7 +57,8 @@ app.post("/approvejoin/", (req, res) => {
         class: request.class,
         hp: 100,
         level: 1,
-        inventory: []
+        inventory: [],
+        campaignId: request.campaignId
     };
 
     players.push(newPlayer);
@@ -137,6 +139,20 @@ function loadJoinRequests() {
 function saveJoinRequests(requests) {
     fs.writeFileSync("./joinRequests.json", JSON.stringify(requests, null, 2));
 }
+
+function loadCampaigns() {
+    return JSON.parse(
+        fs.readFileSync("./campaigns.json")
+    );
+}
+
+function saveCampaigns(campaigns) {
+    fs.writeFileSync(
+        "./campaigns.json",
+        JSON.stringify(campaigns, null, 2)
+    );
+}
+
 
 app.get("/joinrequests", (req, res) => {
     const requests = loadJoinRequests();
@@ -284,10 +300,37 @@ app.get("/removeitem/:playerId/:itemId", (req, res) => {
     });
 });
 
-
+app.get("/campaigns", (req, res) => {
+    const campaigns = loadCampaigns();
+    res.json(campaigns);
+});
 
 io.on("connection", (socket) => {
     console.log("A Questbound device connected: ");
+});
+
+
+
+app.post("/createcampaign", (req, res) => {
+    const campaigns = loadCampaigns();
+
+    const newCampaign = {
+        id: `CAMP-${String(campaigns.length + 1).padStart(3, "0")}`,
+        name: req.body.name,
+        dm: req.body.dm,
+        description: req.body.description || ""
+    };
+
+    campaigns.push(newCampaign);
+
+    saveCampaigns(campaigns);
+
+    io.emit("campaignsUpdated", campaigns);
+
+    res.json({
+        message: `${newCampaign.name} created.`,
+        campaign: newCampaign
+    });
 });
 
 server.listen(port, () => {

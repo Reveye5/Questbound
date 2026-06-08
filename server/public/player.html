@@ -2,14 +2,21 @@
 <html>
 <head>
   <title>Questbound Player Card</title>
-  <h2>Request to Join Campaign</h2>
+  
+</head>
+<body>
+  <h1>Questbound Player Card</h1>
+
+<h2>Request to Join Campaign</h2>
   <input id="joinName" placeholder="Player Name">
   <input id="joinClass" placeholder="Class">
   <button onclick="requestJoin()">Request to Join</button>
   <p id="joinStatus"></p>
-</head>
-<body>
-  <h1>Questbound Player Card</h1>
+  
+<label>Selet Campaign:</label>
+<select id="campaignSelect">
+  <option>Loading campaigns...</option>
+</select>
 
   <lable>Select Character:</lable>
   <select id="playerSelect"></select>
@@ -29,7 +36,8 @@
     async function requestJoin() {
       const joinRequest = {
         name: document.getElementById("joinName").value,
-        class: document.getElementById("joinClass").value
+        class: document.getElementById("joinClass").value,
+        campaignId: document.getElementById("campaignSelect").value
       };
 
       const res = await fetch("/requestjoin", {
@@ -74,10 +82,22 @@ ${inventoryText}`;
     }
 
     socket.on("playersUpdated", async (players) => {
-      const player = players.find(p => p.id === currentPlayerId);
+  await loadPlayerList();
 
-      await showPlayer(player);
-    });
+  const player = players.find(p => p.id === currentPlayerId);
+
+  if (!player) {
+    currentPlayerId = null;
+
+    document.getElementById("output").textContent =
+      "This character was removed from the campaign.";
+
+    return;
+  }
+
+  await showPlayer(player);
+});
+
 
     async function loadPlayerList() {
       const res = await fetch("/players");
@@ -94,7 +114,24 @@ ${inventoryText}`;
       });
     }
 
+    async function loadCampaigns() {
+  const res = await fetch("/campaigns");
+  const campaigns = await res.json();
+
+  const campaignSelect = document.getElementById("campaignSelect");
+  campaignSelect.innerHTML = "";
+
+  campaigns.forEach(campaign => {
+    const option = document.createElement("option");
+    option.value = campaign.id;
+    option.textContent = campaign.name;
+    campaignSelect.appendChild(option);
+  });
+}
+
+
     loadPlayerList();
+    loadCampaigns();
     loadPlayer();
   </script>
 </body>
