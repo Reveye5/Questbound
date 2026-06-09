@@ -14,15 +14,23 @@
   <p id="joinStatus"></p>
   
 <label>Selet Campaign:</label>
-<select id="campaignSelect">
-  <option>Loading campaigns...</option>
-</select>
+<select id="campaignSelect" onchange="loadQuestBoard()">
+
 
   <lable>Select Character:</lable>
   <select id="playerSelect"></select>
   <button onclick="loadPlayer()">Load Player</button>
 
   <button onclick="loadPlayer()">Refresh Player</button>
+
+  <h2>Quest Board</h2>
+
+<select id="questBoardSelect">
+  <option>Loading quests...</option>
+</select>
+
+<button onclick="joinSelectedQuest()">Join Selected Quest</button>
+
 
   <pre id="output"></pre>
 
@@ -52,25 +60,102 @@
       document.getElementById("joinStatus").textContent = data.message;
     }
 
-    async function showPlayer(player) {
-        const itemRes = await fetch("/items");
-        const allItems = await itemRes.json();
+    async function loadQuestBoard() {
+  const selectedCampaignId =
+    document.getElementById("campaignSelect").value;
 
-        const inventoryText = player.inventory && player.inventory.length > 0
-            ? player.inventory.map(itemId => {
-                const item = allItems.find(i => i.id === itemId);
-                return item ? `${item.name} (${item.type})` : `Unknown Item (ID: ${itemId})`;
-            }).join("\n")
-            : "Empty";
-      document.getElementById("output").textContent =
+  const questRes = await fetch("/quests");
+  const quests = await questRes.json();
+
+  const campaignRes = await fetch("/campaigns");
+  const campaigns = await campaignRes.json();
+
+  const joinableQuests = quests.filter(
+    quest =>
+      quest.campaignId === selectedCampaignId &&
+      quest.joinable === true
+  );
+
+  const select = document.getElementById("questBoardSelect");
+  select.innerHTML = "";
+
+  joinableQuests.forEach(quest => {
+    const campaign = campaigns.find(
+      c => c.id === quest.campaignId
+    );
+
+    const option = document.createElement("option");
+    option.value = quest.id;
+    option.textContent =
+      `${quest.title} | ${campaign ? campaign.name : quest.campaignId} | Reward: ${quest.reward}`;
+
+    select.appendChild(option);
+  });
+}
+
+
+
+    async function joinSelectedQuest() {
+  const playerId = document.getElementById("playerSelect").value;
+  const questId = document.getElementById("questBoardSelect").value;
+
+  const res = await fetch("/joinquest", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      playerId: playerId,
+      questId: questId
+    })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("output").textContent =
+    JSON.stringify(data, null, 2);
+
+  await loadPlayer();
+}
+
+
+    async function showPlayer(player) {
+  const itemRes = await fetch("/items");
+  const allItems = await itemRes.json();
+
+  const questRes = await fetch("/quests");
+  const allQuests = await questRes.json();
+
+  const inventoryText =
+    player.inventory && player.inventory.length > 0
+      ? player.inventory.map(itemId => {
+          const item = allItems.find(i => i.id === itemId);
+          return item ? `${item.name} (${item.type})` : itemId;
+        }).join("\n")
+      : "Empty";
+
+  const activeQuestsText =
+    player.activeQuests && player.activeQuests.length > 0
+      ? player.activeQuests.map(questId => {
+          const quest = allQuests.find(q => q.id === questId);
+          return quest
+            ? `${quest.title} - Reward: ${quest.reward}`
+            : questId;
+        }).join("\n")
+      : "No active quests";
+
+  document.getElementById("output").textContent =
 `Name: ${player.name}
 Class: ${player.class}
 Level: ${player.level}
 HP: ${player.hp}
 
 Inventory:
-${inventoryText}`;
-    }
+${inventoryText}
+
+Active Quests:
+${activeQuestsText}`;
+}
 
     async function loadPlayer() {
       const res = await fetch("/players");
@@ -79,6 +164,7 @@ ${inventoryText}`;
       const player = players.find(p => p.id === currentPlayerId);
 
       await showPlayer(player);
+      await loadQuestBoard();
     }
 
     socket.on("playersUpdated", async (players) => {
@@ -131,8 +217,10 @@ ${inventoryText}`;
 
 
     loadPlayerList();
-    loadCampaigns();
-    loadPlayer();
+    loadCampaigns().then(() => {
+      loadQuestBoard();
+    });
+    loadQuestBoard();
   </script>
 </body>
 </html>

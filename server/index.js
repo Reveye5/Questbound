@@ -4,10 +4,61 @@ const http = require("http");
 const { Server } = require("socket.io");
 const app = express();
 const port = 3000;
-app.use(express.static("public"));
-app.use(express.json());
 const server = http.createServer(app);
 const io = new Server(server);
+app.use(express.static("public"));
+app.use(express.json());
+
+
+
+function loadQuests() {
+    return JSON.parse(fs.readFileSync("./quests.json"));
+}
+
+function saveQuests(quests) {
+    fs.writeFileSync("./quests.json", JSON.stringify(quests, null, 2));
+}
+
+function loadPlayers() {
+    return JSON.parse(fs.readFileSync("./players.json"));
+}
+
+function savePlayers(players) {
+    fs.writeFileSync("./players.json", JSON.stringify(players, null, 2));
+}
+
+function loadItems() {
+    return JSON.parse(
+        fs.readFileSync("./items.json")
+    );
+}
+
+function saveItems(items) {
+    fs.writeFileSync("./items.json", JSON.stringify(items, null, 2));
+}
+
+function loadJoinRequests() {
+    return JSON.parse(
+        fs.readFileSync("./joinRequests.json")
+    );
+}
+
+function saveJoinRequests(requests) {
+    fs.writeFileSync("./joinRequests.json", JSON.stringify(requests, null, 2));
+}
+
+function loadCampaigns() {
+    return JSON.parse(
+        fs.readFileSync("./campaigns.json")
+    );
+}
+
+function saveCampaigns(campaigns) {
+    fs.writeFileSync(
+        "./campaigns.json",
+        JSON.stringify(campaigns, null, 2)
+    );
+}
 
 app.get("/", (req, res) => {
     res.send("Questbound server is running.");
@@ -58,7 +109,9 @@ app.post("/approvejoin/", (req, res) => {
         hp: 100,
         level: 1,
         inventory: [],
-        campaignId: request.campaignId
+        campaignId: request.campaignId,
+        "activeQuests": [],
+        "completedQuests": []
     };
 
     players.push(newPlayer);
@@ -112,47 +165,94 @@ app.post("/removeplayer/", (req, res) => {
     });
 });
 
-function loadPlayers() {
-    return JSON.parse(fs.readFileSync("./players.json"));
-}
+app.get("/quests", (req, res) => {
+    const quests = loadQuests();
+    res.json(quests);
+});
 
-function savePlayers(players) {
-    fs.writeFileSync("./players.json", JSON.stringify(players, null, 2));
-}
+app.post("/createquest", (req, res) => {
+    const quests = loadQuests();
 
-function loadItems() {
-    return JSON.parse(
-        fs.readFileSync("./items.json")
-    );
-}
+    const newQuest = {
+        id: `QUEST-${String(quests.length + 1).padStart(3, "0")}`,
+        campaignId: req.body.campaignId,
+        title: req.body.title,
+        description: req.body.description,
+        reward: req.body.reward,
+        status: "active"
+    };
 
-function saveItems(items) {
-    fs.writeFileSync("./items.json", JSON.stringify(items, null, 2));
-}
+    quests.push(newQuest);
 
-function loadJoinRequests() {
-    return JSON.parse(
-        fs.readFileSync("./joinRequests.json")
-    );
-}
+    saveQuests(quests);
 
-function saveJoinRequests(requests) {
-    fs.writeFileSync("./joinRequests.json", JSON.stringify(requests, null, 2));
-}
+    io.emit("questsUpdated", quests);
 
-function loadCampaigns() {
-    return JSON.parse(
-        fs.readFileSync("./campaigns.json")
-    );
-}
+    res.json({
+        message: `${newQuest.title} created.`,
+        quest: newQuest
+    });
+});
 
-function saveCampaigns(campaigns) {
-    fs.writeFileSync(
-        "./campaigns.json",
-        JSON.stringify(campaigns, null, 2)
-    );
-}
+app.post("/joinquest", (req, res) => {
+    const playerId = Number(req.body.playerId);
+    const questId = req.body.questId;
 
+    const players = loadPlayers();
+    const quests = loadQuests();
+
+    const player = players.find(p => p.id === playerId);
+    const quest = quests.find(q => q.id === questId);
+
+    if (!player) return res.status(404).json({ error: "Player not found" });
+    if (!quest) return res.status(404).json({ error: "Quest not found" });
+
+    if (!quest.joinable) {
+        return res.status(403).json({ error: "This quest is not joinable by players." });
+    }
+
+    if (!player.activeQuests) player.activeQuests = [];
+
+    if (!player.activeQuests.includes(quest.id)) {
+        player.activeQuests.push(quest.id);
+    }
+
+    savePlayers(players);
+    io.emit("playersUpdated", players);
+
+    res.json({
+        message: `${player.name} joined quest: ${quest.title}`,
+        player
+    });
+});
+
+app.post("/assignquest", (req, res) => {
+    const playerId = Number(req.body.playerId);
+    const questId = req.body.questId;
+
+    const players = loadPlayers();
+    const quests = loadQuests();
+
+    const player = players.find(p => p.id === playerId);
+    const quest = quests.find(q => q.id === questId);
+
+    if (!player) return res.status(404).json({ error: "Player not found" });
+    if (!quest) return res.status(404).json({ error: "Quest not found" });
+
+    if (!player.activeQuests) player.activeQuests = [];
+
+    if (!player.activeQuests.includes(quest.id)) {
+        player.activeQuests.push(quest.id);
+    }
+
+    savePlayers(players);
+    io.emit("playersUpdated", players);
+
+    res.json({
+        message: `${quest.title} assigned to ${player.name}.`,
+        player
+    });
+});
 
 app.get("/joinrequests", (req, res) => {
     const requests = loadJoinRequests();
@@ -308,8 +408,6 @@ app.get("/campaigns", (req, res) => {
 io.on("connection", (socket) => {
     console.log("A Questbound device connected: ");
 });
-
-
 
 app.post("/createcampaign", (req, res) => {
     const campaigns = loadCampaigns();

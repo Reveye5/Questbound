@@ -1,1 +1,50 @@
-[]
+[
+  {
+    "id": 1,
+    "name": "test ",
+    "class": "player",
+    "hp": 100,
+    "level": 1,
+    "inventory": [],
+    "campaignId": "CAMP-001",
+    "activeQuests": [
+      "QUEST-001"
+    ],
+    "completedQuests": []
+  },
+  {
+    "id": 2,
+    "name": "test 2",
+    "class": "player 2",
+    "hp": 100,
+    "level": 1,
+    "inventory": [],
+    "campaignId": "CAMP-002",
+    "activeQuests": [
+      "QUEST-003"
+    ],
+    "completedQuests": []
+  },
+  {
+    "id": 3,
+    "name": "test 3",
+    "class": "player 3",
+    "hp": 100,
+    "level": 1,
+    "inventory": [],
+    "campaignId": "CAMP-002",
+    "activeQuests": [],
+    "completedQuests": []
+  },
+  {
+    "id": 4,
+    "name": "him",
+    "class": "test",
+    "hp": 100,
+    "level": 1,
+    "inventory": [],
+    "campaignId": "CAMP-002",
+    "activeQuests": [],
+    "completedQuests": []
+  }
+]

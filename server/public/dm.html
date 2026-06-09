@@ -6,9 +6,9 @@
 <body>
   <h1>Questbound DM Dashboard</h1>
 
-  <button onclick="damagePlayer()">Damage Louis -5 HP</button>
-  <button onclick="healPlayer()">Heal Louis +5 HP</button>
-  <button onclick="loadPlayers()">View Players</button>
+ <button onclick="damagePlayer()">Damage Selected Player -5 HP</button>
+<button onclick="healPlayer()">Heal Selected Player +5 HP</button>
+<button onclick="loadPlayers()">View All Players</button>
 
 <h2>Campaign Control</h2>
 
@@ -38,7 +38,22 @@ onchange="campaignChanged()">
 
 <button onclick="createCampaign()">Create Campaign</button>
 
+<h2>Create Quest</h2>
 
+<input id="questTitle" placeholder="Quest Title">
+<input id="questDescription" placeholder="Quest Description">
+<input id="questReward" placeholder="Quest Reward">
+
+<button onclick="createQuest()">Create Quest</button>
+
+<h2>Quest Control</h2>
+
+<select id="questSelect">
+  <option>Loading quests...</option>
+</select>
+
+<button onclick="assignSelectedQuest()">Assign Selected Quest</button>
+<button onclick="completeSelectedQuest()">Complete Selected Quest</button>
 
   <h2>Item Control</h2>
 
@@ -89,6 +104,41 @@ onchange="campaignChanged()">
       document.getElementById("output").textContent = JSON.stringify(data, null, 2);
     }
 
+    async function loadQuests() {
+
+  const res = await fetch("/quests");
+  const quests = await res.json();
+
+  const selectedCampaignId =
+    document.getElementById("dmCampaignSelect").value;
+
+  const filteredQuests =
+    quests.filter(
+      quest => quest.campaignId === selectedCampaignId
+    );
+
+  const questSelect =
+    document.getElementById("questSelect");
+
+  questSelect.innerHTML = "";
+
+  filteredQuests.forEach(quest => {
+
+    const option =
+      document.createElement("option");
+
+    option.value = quest.id;
+
+    option.textContent =
+      `${quest.title} (${quest.status})`;
+
+    questSelect.appendChild(option);
+
+  });
+
+}
+
+
     async function loadItems() {
   const res = await fetch("/items");
   const items = await res.json();
@@ -104,9 +154,61 @@ onchange="campaignChanged()">
   });
 }
 
+async function assignSelectedQuest() {
+  const playerId = document.getElementById("playerSelect").value;
+  const questId = document.getElementById("questSelect").value;
+
+  const res = await fetch("/assignquest", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      playerId: playerId,
+      questId: questId
+    })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("output").textContent =
+    JSON.stringify(data, null, 2);
+
+  await loadPlayerList();
+}
+
+
+async function createQuest() {
+  const campaignId = document.getElementById("dmCampaignSelect").value;
+
+  const newQuest = {
+    campaignId: campaignId,
+    title: document.getElementById("questTitle").value,
+    description: document.getElementById("questDescription").value,
+    reward: document.getElementById("questReward").value
+  };
+
+  const res = await fetch("/createquest", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(newQuest)
+  });
+
+  const data = await res.json();
+
+  document.getElementById("output").textContent =
+    JSON.stringify(data, null, 2);
+
+  await loadQuests();
+}
+
+
 async function campaignChanged() {
   await loadPlayerList();
   await loadJoinRequests();
+  await loadQuests();
 }
 
 async function loadCampaigns() {

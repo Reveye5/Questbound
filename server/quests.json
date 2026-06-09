@@ -1,0 +1,47 @@
+[
+  {
+    "id": "QUEST-001",
+    "campaignId": "CAMP-001",
+    "title": "Find the Lost Key",
+    "description": "Search the area for the hidden key and return it to the DM.",
+    "reward": "50 XP",
+    "status": "active",
+    "joinable": true
+  },
+  {
+    "id": "QUEST-002",
+    "campaignId": "CAMP-001",
+    "title": "Recover the Rusty Sword",
+    "description": "Find the Rusty Sword and add it to your inventory.",
+    "reward": "Rusty Sword",
+    "status": "active",
+    "joinable": true
+  },
+  {
+    "id": "QUEST-003",
+    "campaignId": "CAMP-002",
+    "title": "test quest",
+    "description": "quest test",
+    "reward": "working function",
+    "status": "active",
+    "joinable": true
+  },
+  {
+    "id": "QUEST-004",
+    "campaignId": "CAMP-001",
+    "title": "test quest",
+    "description": "quest test",
+    "reward": "working function",
+    "status": "active",
+    "joinable": true
+  },
+  {
+    "id": "QUEST-005",
+    "campaignId": "CAMP-002",
+    "title": "tester",
+    "description": "quest test",
+    "reward": "",
+    "status": "active",
+    "joinable": false
+  }
+]
