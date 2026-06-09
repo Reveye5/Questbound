@@ -7,10 +7,10 @@
     "level": 1,
     "inventory": [],
     "campaignId": "CAMP-001",
-    "activeQuests": [
+    "activeQuests": [],
+    "completedQuests": [
       "QUEST-001"
-    ],
-    "completedQuests": []
+    ]
   },
   {
     "id": 2,
@@ -21,9 +21,11 @@
     "inventory": [],
     "campaignId": "CAMP-002",
     "activeQuests": [
-      "QUEST-003"
+      "QUEST-005"
     ],
-    "completedQuests": []
+    "completedQuests": [
+      "QUEST-003"
+    ]
   },
   {
     "id": 3,
@@ -44,7 +46,12 @@
     "level": 1,
     "inventory": [],
     "campaignId": "CAMP-002",
-    "activeQuests": [],
-    "completedQuests": []
+    "activeQuests": [
+      "QUEST-003"
+    ],
+    "completedQuests": [
+      "QUEST-003",
+      "QUEST-005"
+    ]
   }
 ]

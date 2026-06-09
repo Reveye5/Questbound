@@ -6,6 +6,7 @@
 </head>
 <body>
   <h1>Questbound Player Card</h1>
+  <p id="socketStatus">Socket not connected</p>
 
 <h2>Request to Join Campaign</h2>
   <input id="joinName" placeholder="Player Name">
@@ -38,6 +39,9 @@
 
   <script>
     const socket = io();
+    socket.on("connect", () => {
+      document.getElementById("socketStatus").textContent = "Socket connected";
+    });
 
     let currentPlayerId = null
 
@@ -168,7 +172,11 @@ ${activeQuestsText}`;
     }
 
     socket.on("playersUpdated", async (players) => {
+      document.getElementById("socketStatus").textContent = "Live update received";
+
   await loadPlayerList();
+
+  if (!currentPlayerId) return;
 
   const player = players.find(p => p.id === currentPlayerId);
 
@@ -182,6 +190,7 @@ ${activeQuestsText}`;
   }
 
   await showPlayer(player);
+  await loadQuestBoard();
 });
 
 

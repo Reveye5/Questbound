@@ -405,6 +405,58 @@ app.get("/campaigns", (req, res) => {
     res.json(campaigns);
 });
 
+app.post("/completequest", (req, res) => {
+  const playerId = Number(req.body.playerId);
+  const questId = req.body.questId;
+
+  const players = loadPlayers();
+  const quests = loadQuests();
+
+  const player = players.find(p => p.id === playerId);
+  const quest = quests.find(q => q.id === questId);
+
+  if (!player) {
+    return res.status(404).json({ error: "Player not found" });
+  }
+
+  if (!quest) {
+    return res.status(404).json({ error: "Quest not found" });
+  }
+
+  if (!player.activeQuests) {
+    player.activeQuests = [];
+  }
+
+  if (!player.completedQuests) {
+    player.completedQuests = [];
+  }
+
+  if (!player.activeQuests.includes(questId)) {
+    return res.status(400).json({
+      error: "Player does not have this quest active."
+    });
+  }
+
+  player.activeQuests = player.activeQuests.filter(
+    id => id !== questId
+  );
+
+  if (!player.completedQuests.includes(questId)) {
+    player.completedQuests.push(questId);
+  }
+
+  savePlayers(players);
+
+  io.emit("playersUpdated", players);
+
+  res.json({
+    message: `${player.name} completed quest: ${quest.title}`,
+    reward: quest.reward,
+    player: player
+  });
+});
+
+
 io.on("connection", (socket) => {
     console.log("A Questbound device connected: ");
 });

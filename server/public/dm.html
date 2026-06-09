@@ -55,6 +55,7 @@ onchange="campaignChanged()">
 <button onclick="assignSelectedQuest()">Assign Selected Quest</button>
 <button onclick="completeSelectedQuest()">Complete Selected Quest</button>
 
+
   <h2>Item Control</h2>
 
   <select id="itemSelect">
@@ -90,6 +91,29 @@ onchange="campaignChanged()">
       const data = await res.json();
       document.getElementById("output").textContent = JSON.stringify(data, null, 2);
     }
+
+    async function completeSelectedQuest() {
+  const playerId = document.getElementById("playerSelect").value;
+  const questId = document.getElementById("questSelect").value;
+
+  const res = await fetch("/completequest", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      playerId: playerId,
+      questId: questId
+    })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("output").textContent =
+    JSON.stringify(data, null, 2);
+
+  await loadPlayerList();
+}
 
     async function healPlayer() {
       const playerId = document.getElementById("playerSelect").value;
