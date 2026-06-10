@@ -2,8 +2,9 @@
 <html>
 <head>
   <title>Questbound Player Card</title>
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
+
 <body>
   <h1>Questbound Player Card</h1>
   <p id="socketStatus">Socket not connected</p>
@@ -13,13 +14,13 @@
   <input id="joinClass" placeholder="Class">
   <button onclick="requestJoin()">Request to Join</button>
   <p id="joinStatus"></p>
-  
-<label>Selet Campaign:</label>
-<select id="campaignSelect" onchange="loadQuestBoard()">
+<label>Select Campaign:</label>
+<select id="campaignSelect" onchange="loadQuestBoard()"></select>
 
+<br>
 
-  <lable>Select Character:</lable>
-  <select id="playerSelect"></select>
+<label>Select Player:</label>
+<select id="playerSelect"></select>
   <button onclick="loadPlayer()">Load Player</button>
 
   <button onclick="loadPlayer()">Refresh Player</button>
@@ -195,19 +196,21 @@ ${activeQuestsText}`;
 
 
     async function loadPlayerList() {
-      const res = await fetch("/players");
-      const players = await res.json();
+  const res = await fetch("/players");
+  const players = await res.json();
 
-      const Select = document.getElementById("playerSelect");
-      Select.innerHTML = "";
+  document.getElementById("socketStatus").textContent =
+  "Socket connected | Players loaded: " + players.length;
+  const select = document.getElementById("playerSelect");
+  select.innerHTML = "";
 
-      players.forEach(player => {
-        const option = document.createElement("option");
-        option.value = player.id;
-        option.textContent = `${player.name} (${player.class})`;
-        Select.appendChild(option);
-      });
-    }
+  players.forEach(player => {
+    const option = document.createElement("option");
+    option.value = player.id;
+    option.textContent = `${player.name} (${player.class})`;
+    select.appendChild(option);
+  });
+}
 
     async function loadCampaigns() {
   const res = await fetch("/campaigns");
@@ -229,7 +232,7 @@ ${activeQuestsText}`;
     loadCampaigns().then(() => {
       loadQuestBoard();
     });
-    loadQuestBoard();
+    
   </script>
 </body>
 </html>
