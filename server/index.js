@@ -108,6 +108,7 @@ app.post("/approvejoin/", (req, res) => {
         class: request.class,
         hp: 100,
         level: 1,
+        xp: 0,
         inventory: [],
         campaignId: request.campaignId,
         "activeQuests": [],
@@ -179,7 +180,8 @@ app.post("/createquest", (req, res) => {
         title: req.body.title,
         description: req.body.description,
         reward: req.body.reward,
-        status: "active"
+        xpReward: Number(req.body.xpReward) || 0,
+        joinable: req.body.joinable === true
     };
 
     quests.push(newQuest);
@@ -445,6 +447,13 @@ app.post("/completequest", (req, res) => {
     player.completedQuests.push(questId);
   }
 
+  player.xp = (player.xp || 0) + (quest.xpReward || 0);
+
+  while (player.xp >= 100) {
+  player.level += 1;
+  player.xp -= 100;
+}
+
   savePlayers(players);
 
   io.emit("playersUpdated", players);
@@ -452,6 +461,7 @@ app.post("/completequest", (req, res) => {
   res.json({
     message: `${player.name} completed quest: ${quest.title}`,
     reward: quest.reward,
+    xpReward: quest.xpReward,
     player: player
   });
 });
@@ -462,25 +472,25 @@ io.on("connection", (socket) => {
 });
 
 app.post("/createcampaign", (req, res) => {
-    const campaigns = loadCampaigns();
+  const campaigns = loadCampaigns();
 
-    const newCampaign = {
-        id: `CAMP-${String(campaigns.length + 1).padStart(3, "0")}`,
-        name: req.body.name,
-        dm: req.body.dm,
-        description: req.body.description || ""
-    };
+  const newCampaign = {
+    id: `CAMP-${String(campaigns.length + 1).padStart(3, "0")}`,
+    name: req.body.name,
+    dm: req.body.dm,
+    description: req.body.description || ""
+  };
 
-    campaigns.push(newCampaign);
+  campaigns.push(newCampaign);
 
-    saveCampaigns(campaigns);
+  saveCampaigns(campaigns);
 
-    io.emit("campaignsUpdated", campaigns);
+  io.emit("campaignsUpdated", campaigns);
 
-    res.json({
-        message: `${newCampaign.name} created.`,
-        campaign: newCampaign
-    });
+  res.json({
+    message: `${newCampaign.name} created.`,
+    campaign: newCampaign
+  });
 });
 
 server.listen(port, () => {

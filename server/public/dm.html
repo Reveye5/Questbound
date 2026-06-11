@@ -43,6 +43,12 @@ onchange="campaignChanged()">
 <input id="questTitle" placeholder="Quest Title">
 <input id="questDescription" placeholder="Quest Description">
 <input id="questReward" placeholder="Quest Reward">
+<input id="questXpReward" placeholder="XP Reward" type="number">
+
+<label>
+  <input id="questJoinable" type="checkbox" checked>
+  Player can join this quest
+</label>
 
 <button onclick="createQuest()">Create Quest</button>
 
@@ -68,7 +74,6 @@ onchange="campaignChanged()">
   <input id="ItemType" placeholder="Type: Weapon, Potion, armor">
   <input id="ItemDescription" placeholder="Item Description">
   <input id="ItemDamage" placeholder="Damage" type="number">
-  <input id="ItemHeal" placeholder="Heal" type="number">
 
   <button onclick="createCustomItem()">Create Custom Item</button>
   <button onclick="createNewItem()">Create Item</button>
@@ -209,7 +214,9 @@ async function createQuest() {
     campaignId: campaignId,
     title: document.getElementById("questTitle").value,
     description: document.getElementById("questDescription").value,
-    reward: document.getElementById("questReward").value
+    reward: document.getElementById("questReward").value,
+    xpReward: document.getElementById("questXpReward").value,
+    joinable: document.getElementById("questJoinable").checked
   };
 
   const res = await fetch("/createquest", {
@@ -440,9 +447,6 @@ async function removeSelectedPlayer() {
 
 loadItems();
 loadCampaigns()
-loadPlayerList();
-loadJoinRequests();
-
 
   </script>
 </body>
