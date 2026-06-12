@@ -1,1 +1,11 @@
-[]
+[
+  {
+    "id": "QUEST-001",
+    "campaignId": "CAMP-001",
+    "title": "Test quest ",
+    "description": "Dm quest test",
+    "reward": "Knowledge ",
+    "xpReward": 100,
+    "joinable": true
+  }
+]

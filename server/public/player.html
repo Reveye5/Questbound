@@ -144,23 +144,64 @@
       ? player.activeQuests.map(questId => {
           const quest = allQuests.find(q => q.id === questId);
           return quest
-            ? `${quest.title} - Reward: ${quest.reward}`
+            ? `${quest.title}
+              Description: ${quest.description}
+              Reward: ${quest.reward}
+              XP: ${quest.xpReward}`
             : questId;
         }).join("\n")
       : "No active quests";
+      
+  const completedQuestsText =
+    player.completedQuests && player.completedQuests.length > 0
+    ? player.completedQuests.map(questId => {
+        const quest = allQuests.find(q => q.id === questId);
+        return quest
+          ? `${quest.title}
+          Description: ${quest.description}
+          Reward: ${quest.reward}
+          XP: ${quest.xpReward}`
+          : questId;
+      }).join("\n")
+    : "No completed quests";
+    
+    const rewardsText =
+  player.completedQuests && player.completedQuests.length > 0
+    ? player.completedQuests.map(questId => {
+        const quest = allQuests.find(q => q.id === questId);
+        return quest
+          ? `${quest.title}: ${quest.reward}`
+          : questId;
+      }).join("\n")
+    : "No rewards earned yet";
+    
+    const statsText =
+  player.stats
+    ? Object.entries(player.stats)
+        .map(([stat, value]) => `${stat}: ${value}`)
+        .join("\n")
+    : "No stats";
 
   document.getElementById("output").textContent =
-`Name: ${player.name}
-Class: ${player.class}
-Level: ${player.level}
-XP: ${player.xp}
-HP: ${player.hp}
+      `Name: ${player.name}
+      Class: ${player.class}
+      Level: ${player.level}
+      HP: ${player.hp}
 
-Inventory:
-${inventoryText}
+      Stats:
+      ${statsText}
+      
+      Inventory:
+      ${inventoryText}
 
-Active Quests:
-${activeQuestsText}`;
+      Active Quests:
+      ${activeQuestsText}
+
+      Completed Quests:
+      ${completedQuestsText}
+
+      Rewards Earned:
+      ${rewardsText}`;
 }
 
     async function loadPlayer() {

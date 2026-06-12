@@ -9,7 +9,34 @@ const io = new Server(server);
 app.use(express.static("public"));
 app.use(express.json());
 
+function rollD20() {
+  return Math.floor(Math.random() * 20) + 1;
+}
 
+function runCheck(player, checkType, difficulty) {
+    if (!checkTypes[checkType]) {
+        return {
+            error: `Invalid check type: ${checkType}`,
+            success: false
+        };
+    }
+
+    const stats = player.stats || {};
+    const modifier = stats[checkType] || 0;
+
+    const roll = rollD20();
+    const total = roll + modifier;
+
+    return {
+        checkType,
+        checkName: checkTypes[checkType],
+        difficulty,
+        roll,
+        modifier,
+        total,
+        success: total >= difficulty
+    };
+}
 
 function loadQuests() {
     return JSON.parse(fs.readFileSync("./quests.json"));
@@ -25,6 +52,28 @@ function loadPlayers() {
 
 function savePlayers(players) {
     fs.writeFileSync("./players.json", JSON.stringify(players, null, 2));
+}
+
+function rollD20() {
+    return Math.floor(Math.random() * 20) + 1;
+}
+
+function runCheck(player, checkType, difficulty) {
+    const stats = player.stats || {};
+
+    const modifier = stats[checkType] || 0;
+
+    const roll = rollD20();
+    const total = roll + modifier;
+
+    return {
+        checkType,
+        difficulty,
+        roll,
+        modifier,
+        total,
+        success: total >= difficulty
+    };
 }
 
 function loadItems() {
@@ -218,6 +267,12 @@ app.post("/joinquest", (req, res) => {
     if (!player.activeQuests.includes(quest.id)) {
         player.activeQuests.push(quest.id);
     }
+    
+    if (!player.activeQuestSteps) player.activeQuestSteps = {};
+
+    if (quest.startStepId && !player.activeQuestSteps[quest.id]) {
+    player.activeQuestSteps[quest.id] = quest.startStepId;
+}
 
     savePlayers(players);
     io.emit("playersUpdated", players);
@@ -259,6 +314,74 @@ app.post("/assignquest", (req, res) => {
 app.get("/joinrequests", (req, res) => {
     const requests = loadJoinRequests();
     res.json(requests);
+});
+
+app.post("/choosequeststep", (req, res) => {
+    const playerId = Number(req.body.playerId);
+    const questId = req.body.questId;
+    const choiceId = req.body.choiceId;
+
+    const players = loadPlayers();
+    const quests = loadQuests();
+
+    const player = players.find(p => p.id === playerId);
+    const quest = quests.find(q => q.id === questId);
+
+    if (!player) return res.status(404).json({ error: "Player not found" });
+    if (!quest) return res.status(404).json({ error: "Quest not found" });
+
+    if (!quest.steps || !quest.startStepId) {
+        return res.status(400).json({ error: "Quest has no step system yet" });
+    }
+
+    if (!player.activeQuestSteps) player.activeQuestSteps = {};
+
+    const currentStepId =
+        player.activeQuestSteps[quest.id] || quest.startStepId;
+
+    const currentStep = quest.steps.find(step => step.id === currentStepId);
+
+    if (!currentStep) {
+        return res.status(404).json({ error: "Current step not found" });
+    }
+
+    const choice = currentStep.choices.find(c => c.id === choiceId);
+
+    if (!choice) {
+        return res.status(404).json({ error: "Choice not found" });
+    }
+
+    const check = runCheck(player, choice.checkType, choice.difficulty);
+    
+    if (check.error) {
+    return res.status(400).json(check);
+}
+    
+    const checkTypes = {
+    strength: "Strength",
+    dexterity: "Dexterity",
+    intelligence: "Intelligence",
+    wisdom: "Wisdom",
+    charisma: "Charisma",
+    constitution: "Constitution",
+    stealth: "Stealth"
+};
+
+    const nextStepId = check.success
+        ? choice.successStepId
+        : choice.failStepId;
+
+    player.activeQuestSteps[quest.id] = nextStepId;
+
+    savePlayers(players);
+    io.emit("playersUpdated", players);
+
+    res.json({
+        message: check.success ? "Check succeeded!" : "Check failed!",
+        check,
+        nextStepId,
+        player
+    });
 });
 
 app.get("/items", (req, res) => {

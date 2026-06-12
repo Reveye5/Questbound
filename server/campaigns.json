@@ -1,1 +1,8 @@
-[]
+[
+  {
+    "id": "CAMP-001",
+    "name": "Test campaign ",
+    "dm": "Dm tester",
+    "description": "Functional?"
+  }
+]
