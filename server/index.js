@@ -151,6 +151,18 @@ app.post("/approvejoin/", (req, res) => {
         return res.status(404).json({ error: "Join request not found" });
     }
 
+    const existingPlayer = players.find(
+  p =>
+    p.campaignId === request.campaignId &&
+    p.name.toLowerCase() === request.name.toLowerCase()
+);
+
+if (existingPlayer) {
+  return res.status(400).json({
+    error: "A player with that name already exists in this campaign."
+  });
+}
+
     const newPlayer = {
         id: players.length + 1,
         name: request.name,
@@ -222,6 +234,18 @@ app.get("/quests", (req, res) => {
 
 app.post("/createquest", (req, res) => {
     const quests = loadQuests();
+
+    const existingQuest = quests.find(
+  q =>
+    q.campaignId === req.body.campaignId &&
+    q.title.toLowerCase() === req.body.title.toLowerCase()
+);
+
+if (existingQuest) {
+  return res.status(400).json({
+    error: "A quest with that title already exists in this campaign."
+  });
+}
 
     const newQuest = {
         id: `QUEST-${String(quests.length + 1).padStart(3, "0")}`,
@@ -597,6 +621,16 @@ io.on("connection", (socket) => {
 app.post("/createcampaign", (req, res) => {
   const campaigns = loadCampaigns();
 
+  const existingCampaign = campaigns.find(
+  c => c.name.toLowerCase() === req.body.name.toLowerCase()
+);
+
+if (existingCampaign) {
+  return res.status(400).json({
+    error: "A campaign with that name already exists."
+  });
+}
+
   const newCampaign = {
     id: `CAMP-${String(campaigns.length + 1).padStart(3, "0")}`,
     name: req.body.name,
@@ -613,6 +647,42 @@ app.post("/createcampaign", (req, res) => {
   res.json({
     message: `${newCampaign.name} created.`,
     campaign: newCampaign
+  });
+});
+
+app.post("/deletequest", (req, res) => {
+  const questId = req.body.questId;
+
+  const quests = loadQuests();
+  const players = loadPlayers();
+
+  const quest = quests.find(q => q.id === questId);
+
+  if (!quest) {
+    return res.status(404).json({ error: "Quest not found" });
+  }
+
+  const updatedQuests = quests.filter(q => q.id !== questId);
+
+  players.forEach(player => {
+    if (player.activeQuests) {
+      player.activeQuests = player.activeQuests.filter(id => id !== questId);
+    }
+
+    if (player.completedQuests) {
+      player.completedQuests = player.completedQuests.filter(id => id !== questId);
+    }
+  });
+
+  saveQuests(updatedQuests);
+  savePlayers(players);
+
+  io.emit("questsUpdated", updatedQuests);
+  io.emit("playersUpdated", players);
+
+  res.json({
+    message: `${quest.title} deleted.`,
+    quests: updatedQuests
   });
 });
 

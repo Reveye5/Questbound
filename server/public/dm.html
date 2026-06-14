@@ -19,7 +19,7 @@ onchange="campaignChanged()">
 
   <h2>Player Control</h2>
 
-  <select id="playerSelect">
+  <select id="playerSelect" onchange="loadActiveQuestsForSelectedPlayer()"></select>
     <option>Loading players...</option>
   </select>
 
@@ -54,12 +54,39 @@ onchange="campaignChanged()">
 
 <h2>Quest Control</h2>
 
-<select id="questSelect">
-  <option>Loading quests...</option>
-</select>
+<div style="display: flex; gap: 30px;">
 
-<button onclick="assignSelectedQuest()">Assign Selected Quest</button>
-<button onclick="completeSelectedQuest()">Complete Selected Quest</button>
+  <div>
+    <h3>Campaign Quests</h3>
+    <select id="questSelect">
+      <option>Loading quests...</option>
+    </select>
+
+    <br><br>
+
+    <button onclick="assignSelectedQuest()">
+      Assign/Join Selected Quest
+    </button>
+
+    <button onclick="deleteSelectedQuest()">
+      Delete Selected Quest
+    </button>
+  </div>
+
+  <div>
+    <h3>Selected Player Active Quests</h3>
+    <select id="activeQuestSelect">
+      <option>Loading active quests...</option>
+    </select>
+
+    <br><br>
+
+    <button onclick="completeSelectedQuest()">
+      Complete Active Quest
+    </button>
+  </div>
+
+</div>
 
 
   <h2>Item Control</h2>
@@ -99,7 +126,7 @@ onchange="campaignChanged()">
 
     async function completeSelectedQuest() {
   const playerId = document.getElementById("playerSelect").value;
-  const questId = document.getElementById("questSelect").value;
+  const questId = document.getElementById("activeQuestSelect").value;
 
   const res = await fetch("/completequest", {
     method: "POST",
@@ -132,6 +159,43 @@ onchange="campaignChanged()">
       const data = await res.json();
       document.getElementById("output").textContent = JSON.stringify(data, null, 2);
     }
+
+    async function loadActiveQuestsForSelectedPlayer() {
+  const playerId = Number(document.getElementById("playerSelect").value);
+
+  const playerRes = await fetch("/players");
+  const players = await playerRes.json();
+
+  const questRes = await fetch("/quests");
+  const quests = await questRes.json();
+
+  const player = players.find(p => p.id === playerId);
+
+  const select = document.getElementById("activeQuestSelect");
+  select.innerHTML = "";
+
+  if (!player || !player.activeQuests || player.activeQuests.length === 0) {
+    const option = document.createElement("option");
+    option.textContent = "No active quests";
+    option.value = "";
+    select.appendChild(option);
+    return;
+  }
+
+  player.activeQuests.forEach(questId => {
+    const quest = quests.find(q => q.id === questId);
+
+    const option = document.createElement("option");
+    option.value = questId;
+    option.textContent = quest
+      ? `${quest.title} - Reward: ${quest.reward}`
+      : questId;
+
+    select.appendChild(option);
+  });
+
+  await loadActiveQuestsForSelectedPlayer();
+}
 
     async function loadQuests() {
 
@@ -167,6 +231,25 @@ onchange="campaignChanged()">
 
 }
 
+async function deleteSelectedQuest() {
+  const questId = document.getElementById("questSelect").value;
+
+  const res = await fetch("/deletequest", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ questId: questId })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("output").textContent =
+    JSON.stringify(data, null, 2);
+
+  await loadQuests();
+  await loadPlayerList();
+}
 
     async function loadItems() {
   const res = await fetch("/items");
@@ -196,7 +279,10 @@ async function assignSelectedQuest() {
       playerId: playerId,
       questId: questId
     })
+    
   });
+
+  await loadActiveQuestsForSelectedPlayer();
 
   const data = await res.json();
 
@@ -321,6 +407,8 @@ async function loadPlayerList() {
         playerSelect.appendChild(option);
 
     });
+
+    await loadActiveQuestsForSelectedPlayer();
 
 }
 

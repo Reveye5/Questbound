@@ -20,18 +20,38 @@
 <br>
 
 <label>Select Player:</label>
-<select id="playerSelect"></select>
+<select id="playerSelect" onchange="loadPlayer(); loadPlayerActiveQuests();">
   <button onclick="loadPlayer()">Load Player</button>
 
   <button onclick="loadPlayer()">Refresh Player</button>
 
   <h2>Quest Board</h2>
 
-<select id="questBoardSelect">
-  <option>Loading quests...</option>
-</select>
+<div style="display: flex; gap: 30px;">
 
-<button onclick="joinSelectedQuest()">Join Selected Quest</button>
+  <div>
+    <h3>Available Quests</h3>
+
+    <select id="questBoardSelect">
+      <option>Loading quests...</option>
+    </select>
+
+    <br><br>
+
+    <button onclick="joinSelectedQuest()">
+      Join Selected Quest
+    </button>
+  </div>
+
+  <div>
+    <h3>My Active Quests</h3>
+
+    <select id="playerActiveQuestSelect">
+      <option>No active quests</option>
+    </select>
+  </div>
+
+</div>
 
 
   <pre id="output"></pre>
@@ -64,6 +84,41 @@
       const data = await res.json();
       document.getElementById("joinStatus").textContent = data.message;
     }
+
+    async function loadPlayerActiveQuests() {
+  const playerId = Number(document.getElementById("playerSelect").value);
+
+  const playerRes = await fetch("/players");
+  const players = await playerRes.json();
+
+  const questRes = await fetch("/quests");
+  const quests = await questRes.json();
+
+  const player = players.find(p => p.id === playerId);
+
+  const select = document.getElementById("playerActiveQuestSelect");
+  select.innerHTML = "";
+
+  if (!player || !player.activeQuests || player.activeQuests.length === 0) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "No active quests";
+    select.appendChild(option);
+    return;
+  }
+
+  player.activeQuests.forEach(questId => {
+    const quest = quests.find(q => q.id === questId);
+
+    const option = document.createElement("option");
+    option.value = questId;
+    option.textContent = quest
+      ? `${quest.title} - Reward: ${quest.reward}`
+      : questId;
+
+    select.appendChild(option);
+  });
+}
 
     async function loadQuestBoard() {
   const selectedCampaignId =
@@ -121,6 +176,7 @@
     JSON.stringify(data, null, 2);
 
   await loadPlayer();
+  await loadPlayerActiveQuests();
 }
 
 
@@ -187,6 +243,7 @@
       Class: ${player.class}
       Level: ${player.level}
       HP: ${player.hp}
+      XP: ${player.xp}
 
       Stats:
       ${statsText}
@@ -212,6 +269,7 @@
 
       await showPlayer(player);
       await loadQuestBoard();
+      await loadPlayerActiveQuests();
     }
 
     socket.on("playersUpdated", async (players) => {

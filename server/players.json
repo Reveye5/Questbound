@@ -1,21 +1,18 @@
 [
   {
-      "id": 1,
-      "name": "test",
-      "class": "player",
-      "hp": 100,
-      "level": 1,
-      "inventory": [],
-      "campaignId": "CAMP-001",
-      "activeQuests": [],
-      "completedQuests": [],
-      "stats": {
-      "strength": 2,
-      "dexterity": 3,
-      "intelligence": 1,
-      "wisdom": 0,
-      "charisma": 1,
-      "constitution": 2
-    }
+    "id": 1,
+    "name": "nathan",
+    "class": "tester",
+    "hp": 100,
+    "level": 1,
+    "xp": 0,
+    "inventory": [
+      "ITEM-001"
+    ],
+    "campaignId": "CAMP-001",
+    "activeQuests": [
+      "QUEST-001"
+    ],
+    "completedQuests": []
   }
 ]
