@@ -19,8 +19,25 @@
 
 <br>
 
+<h2>Spend Stat Points</h2>
+
+<select id="upgradeStat">
+  <option value="strength">Strength</option>
+  <option value="dexterity">Dexterity</option>
+  <option value="intelligence">Intelligence</option>
+  <option value="wisdom">Wisdom</option>
+  <option value="charisma">Charisma</option>
+  <option value="constitution">Constitution</option>
+  <option value="stealth">Stealth</option>
+</select>
+
+<button onclick="upgradeStat()">
+  Spend Stat Point
+</button>
+
 <label>Select Player:</label>
 <select id="playerSelect" onchange="loadPlayer(); loadPlayerActiveQuests();">
+  <option>Loading players...</option> </select>
   <button onclick="loadPlayer()">Load Player</button>
 
   <button onclick="loadPlayer()">Refresh Player</button>
@@ -53,6 +70,51 @@
 
 </div>
 
+<h2>Player Check Roll</h2>
+
+<select id="playerCheckType">
+  <option value="strength">Strength</option>
+  <option value="dexterity">Dexterity</option>
+  <option value="intelligence">Intelligence</option>
+  <option value="wisdom">Wisdom</option>
+  <option value="charisma">Charisma</option>
+  <option value="constitution">Constitution</option>
+  <option value="stealth">Stealth</option>
+</select>
+
+<input id="playerCheckDifficulty" type="number" value="10">
+
+<button onclick="playerRollCheck()">Roll Check</button>
+
+<h2>Player Dice Roller</h2>
+
+<input id="playerDiceAmount" type="number" min="1" value="1">
+
+<select id="playerDiceSides">
+  <option value="4">d4</option>
+  <option value="6">d6</option>
+  <option value="8">d8</option>
+  <option value="10">d10</option>
+  <option value="12">d12</option>
+  <option value="20" selected>d20</option>
+  <option value="100">d100</option>
+</select>
+
+<button onclick="playerRollDice()">Roll Dice</button>
+
+<h2>Character Creation</h2>
+
+<button onclick="generateCharacterStats()">
+  Generate Stats
+</button>
+
+<button onclick="rerollCharacterStats()">
+  Reroll Once
+</button>
+
+<button onclick="acceptCharacterStats()">
+  Accept Stats
+</button>
 
   <pre id="output"></pre>
 
@@ -84,6 +146,133 @@
       const data = await res.json();
       document.getElementById("joinStatus").textContent = data.message;
     }
+    
+    async function upgradeStat() {
+  const playerId =
+    document.getElementById("playerSelect").value;
+
+  const stat =
+    document.getElementById("upgradeStat").value;
+
+  const res = await fetch("/upgradestat", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      playerId,
+      stat
+    })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("output").textContent =
+    JSON.stringify(data, null, 2);
+
+  await loadPlayer();
+}
+    
+    async function generateCharacterStats() {
+  const playerId =
+    document.getElementById("playerSelect").value;
+
+  const res = await fetch("/generatestats", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ playerId })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("output").textContent =
+    JSON.stringify(data, null, 2);
+
+  await loadPlayer();
+}
+
+async function rerollCharacterStats() {
+  const playerId =
+    document.getElementById("playerSelect").value;
+
+  const res = await fetch("/rerollstats", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ playerId })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("output").textContent =
+    JSON.stringify(data, null, 2);
+
+  await loadPlayer();
+}
+
+async function acceptCharacterStats() {
+  const playerId =
+    document.getElementById("playerSelect").value;
+
+  const res = await fetch("/acceptstats", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ playerId })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("output").textContent =
+    JSON.stringify(data, null, 2);
+
+  await loadPlayer();
+}
+    
+    async function playerRollCheck() {
+  const playerId = document.getElementById("playerSelect").value;
+  const checkType = document.getElementById("playerCheckType").value;
+  const difficulty = document.getElementById("playerCheckDifficulty").value;
+
+  const res = await fetch("/rollcheck", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      playerId,
+      checkType,
+      difficulty
+    })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("output").textContent =
+    JSON.stringify(data, null, 2);
+}
+    
+    async function playerRollDice() {
+  const amount = document.getElementById("playerDiceAmount").value;
+  const sides = document.getElementById("playerDiceSides").value;
+
+  const res = await fetch("/rolldice", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ amount, sides })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("output").textContent =
+    JSON.stringify(data, null, 2);
+}
 
     async function loadPlayerActiveQuests() {
   const playerId = Number(document.getElementById("playerSelect").value);
@@ -177,6 +366,7 @@
 
   await loadPlayer();
   await loadPlayerActiveQuests();
+  await loadQuestBoard();
 }
 
 

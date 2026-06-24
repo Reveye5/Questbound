@@ -10,6 +10,64 @@
 <button onclick="healPlayer()">Heal Selected Player +5 HP</button>
 <button onclick="loadPlayers()">View All Players</button>
 
+<h2>DM Check Roll</h2>
+
+<select id="dmCheckType">
+  <option value="strength">Strength</option>
+  <option value="dexterity">Dexterity</option>
+  <option value="intelligence">Intelligence</option>
+  <option value="wisdom">Wisdom</option>
+  <option value="charisma">Charisma</option>
+  <option value="constitution">Constitution</option>
+  <option value="stealth">Stealth</option>
+</select>
+
+<input id="dmCheckDifficulty" type="number" value="10">
+
+<button onclick="dmRollCheck()">Roll Check For Selected Player</button>
+
+<h2>Dice Roller</h2>
+
+<input id="diceAmount" type="number" min="1" value="1">
+
+<select id="diceSides">
+  <option value="4">d4</option>
+  <option value="6">d6</option>
+  <option value="8">d8</option>
+  <option value="10">d10</option>
+  <option value="12">d12</option>
+  <option value="20" selected>d20</option>
+  <option value="100">d100</option>
+</select>
+
+<button onclick="rollSelectedDice()">Roll Dice</button>
+
+<button onclick="rollAndDamageSelectedPlayer()">
+  Roll Damage Against Selected Player
+</button>
+
+<h2>Action Roller</h2>
+
+<input id="actionDiceAmount" type="number" min="1" value="1">
+
+<select id="actionDiceSides">
+  <option value="4">d4</option>
+  <option value="6">d6</option>
+  <option value="8">d8</option>
+  <option value="10">d10</option>
+  <option value="12">d12</option>
+  <option value="20" selected>d20</option>
+  <option value="100">d100</option>
+</select>
+
+<select id="rollActionType">
+  <option value="roll">Roll Only</option>
+  <option value="damage">Damage Selected Player</option>
+  <option value="heal">Heal Selected Player</option>
+</select>
+
+<button onclick="rollActionDice()">Roll Action</button>
+
 <h2>Campaign Control</h2>
 
 <select id="dmCampaignSelect"
@@ -19,7 +77,7 @@ onchange="campaignChanged()">
 
   <h2>Player Control</h2>
 
-  <select id="playerSelect" onchange="loadActiveQuestsForSelectedPlayer()"></select>
+  <select id="playerSelect" onchange="loadActiveQuestsForSelectedPlayer()">
     <option>Loading players...</option>
   </select>
 
@@ -44,6 +102,14 @@ onchange="campaignChanged()">
 <input id="questDescription" placeholder="Quest Description">
 <input id="questReward" placeholder="Quest Reward">
 <input id="questXpReward" placeholder="XP Reward" type="number">
+<label>Number of Objectives:</label>
+<input id="objectiveCount" type="number" min="1" value="1">
+
+<button onclick="generateObjectiveInputs()">
+  Generate Objectives
+</button>
+
+<div id="objectiveInputs"></div>
 
 <label>
   <input id="questJoinable" type="checkbox" checked>
@@ -74,18 +140,30 @@ onchange="campaignChanged()">
   </div>
 
   <div>
-    <h3>Selected Player Active Quests</h3>
-    <select id="activeQuestSelect">
-      <option>Loading active quests...</option>
-    </select>
+   <div>
+  <h3>Selected Player Active Quests</h3>
 
-    <br><br>
+  <select id="activeQuestSelect" onchange="loadObjectivesForSelectedQuest()">
+    <option>Loading active quests...</option>
+  </select>
 
-    <button onclick="completeSelectedQuest()">
-      Complete Active Quest
-    </button>
-  </div>
+  <br><br>
 
+  <button onclick="completeSelectedQuest()">
+    Complete Active Quest
+  </button>
+
+  <h3>Quest Objectives</h3>
+
+  <select id="objectiveSelect">
+    <option>Loading objectives...</option>
+  </select>
+
+  <br><br>
+
+  <button onclick="completeSelectedObjective()">
+    Complete Selected Objective
+  </button>
 </div>
 
 
@@ -108,7 +186,8 @@ onchange="campaignChanged()">
   <button onclick="removeSelectedItem()">Remove Selected Item</button>
 
   <pre id="output"></pre>
-
+  
+  
   <script src="/socket.io/socket.io.js"></script>
 
   <script>
@@ -123,6 +202,186 @@ onchange="campaignChanged()">
       const data = await res.json();
       document.getElementById("output").textContent = JSON.stringify(data, null, 2);
     }
+    
+    function generateObjectiveInputs() {
+  const count = Number(document.getElementById("objectiveCount").value);
+  const box = document.getElementById("objectiveInputs");
+
+  box.innerHTML = "";
+
+  for (let i = 1; i <= count; i++) {
+    const input = document.createElement("input");
+    input.id = `questObjective${i}`;
+    input.placeholder = `Objective ${i}`;
+
+    box.appendChild(input);
+    box.appendChild(document.createElement("br"));
+  }
+}
+
+async function dmRollCheck() {
+  const playerId = document.getElementById("playerSelect").value;
+  const checkType = document.getElementById("dmCheckType").value;
+  const difficulty = document.getElementById("dmCheckDifficulty").value;
+
+  const res = await fetch("/rollcheck", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      playerId,
+      checkType,
+      difficulty
+    })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("output").textContent =
+    JSON.stringify(data, null, 2);
+}
+
+async function rollActionDice() {
+  const playerId = document.getElementById("playerSelect").value;
+  const amount = document.getElementById("actionDiceAmount").value;
+  const sides = document.getElementById("actionDiceSides").value;
+  const actionType = document.getElementById("rollActionType").value;
+
+  const rollRes = await fetch("/rolldice", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ amount, sides })
+  });
+
+  const rollData = await rollRes.json();
+
+  let actionResult = null;
+
+  if (actionType === "damage") {
+    const damageRes = await fetch(`/damage/${playerId}/${rollData.total}`);
+    actionResult = await damageRes.json();
+  }
+
+  if (actionType === "heal") {
+    const healRes = await fetch(`/heal/${playerId}/${rollData.total}`);
+    actionResult = await healRes.json();
+  }
+
+  document.getElementById("output").textContent =
+    JSON.stringify({
+      actionType,
+      roll: rollData,
+      result: actionResult
+    }, null, 2);
+
+  await loadPlayerList();
+}
+
+async function rollSelectedDice() {
+  const amount = document.getElementById("diceAmount").value;
+  const sides = document.getElementById("diceSides").value;
+
+  const res = await fetch("/rolldice", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      amount: amount,
+      sides: sides
+    })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("output").textContent =
+    JSON.stringify(data, null, 2);
+}
+
+async function rollAndDamageSelectedPlayer() {
+  const playerId = document.getElementById("playerSelect").value;
+  const amount = document.getElementById("diceAmount").value;
+  const sides = document.getElementById("diceSides").value;
+
+  const rollRes = await fetch("/rolldice", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      amount: amount,
+      sides: sides
+    })
+  });
+
+  const rollData = await rollRes.json();
+
+  const damageRes = await fetch(`/damage/${playerId}/${rollData.total}`);
+  const damageData = await damageRes.json();
+
+  document.getElementById("output").textContent =
+    JSON.stringify({
+      roll: rollData,
+      damageApplied: damageData
+    }, null, 2);
+
+  await loadPlayerList();
+}
+
+    async function completeSelectedObjective() {
+  const questId = document.getElementById("activeQuestSelect").value;
+  const objectiveId = document.getElementById("objectiveSelect").value;
+
+  const res = await fetch("/completeobjective", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      questId: questId,
+      objectiveId: objectiveId
+    })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("output").textContent =
+    JSON.stringify(data, null, 2);
+
+  await loadObjectivesForSelectedQuest();
+}
+
+    async function loadObjectivesForSelectedQuest() {
+  const questId = document.getElementById("activeQuestSelect").value;
+
+  const questRes = await fetch("/quests");
+  const quests = await questRes.json();
+
+  const quest = quests.find(q => q.id === questId);
+
+  const select = document.getElementById("objectiveSelect");
+  select.innerHTML = "";
+
+  if (!quest || !quest.objectives || quest.objectives.length === 0) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "No objectives";
+    select.appendChild(option);
+    return;
+  }
+
+  quest.objectives.forEach(objective => {
+    const option = document.createElement("option");
+    option.value = objective.id;
+    option.textContent =
+      `${objective.completed ? "✅" : "⬜"} ${objective.text}`;
+
+    select.appendChild(option);
+  });
+}
 
     async function completeSelectedQuest() {
   const playerId = document.getElementById("playerSelect").value;
@@ -193,8 +452,7 @@ onchange="campaignChanged()">
 
     select.appendChild(option);
   });
-
-  await loadActiveQuestsForSelectedPlayer();
+  await loadObjectivesForSelectedQuest();
 }
 
     async function loadQuests() {
@@ -296,13 +554,29 @@ async function assignSelectedQuest() {
 async function createQuest() {
   const campaignId = document.getElementById("dmCampaignSelect").value;
 
+  const objectiveCount = Number(document.getElementById("objectiveCount").value);
+  const objectives = [];
+
+  for (let i = 1; i <= objectiveCount; i++) {
+    const objectiveInput = document.getElementById(`questObjective${i}`);
+
+    if (objectiveInput && objectiveInput.value.trim() !== "") {
+      objectives.push({
+        id: `OBJ-${String(i).padStart(3, "0")}`,
+        text: objectiveInput.value,
+        completed: false
+      });
+    }
+  }
+
   const newQuest = {
     campaignId: campaignId,
     title: document.getElementById("questTitle").value,
     description: document.getElementById("questDescription").value,
     reward: document.getElementById("questReward").value,
     xpReward: document.getElementById("questXpReward").value,
-    joinable: document.getElementById("questJoinable").checked
+    joinable: document.getElementById("questJoinable").checked,
+    objectives: objectives
   };
 
   const res = await fetch("/createquest", {
@@ -321,11 +595,11 @@ async function createQuest() {
   await loadQuests();
 }
 
-
 async function campaignChanged() {
+  await loadQuests();
   await loadPlayerList();
   await loadJoinRequests();
-  await loadQuests();
+  await loadActiveQuestsForSelectedPlayer();
 }
 
 async function loadCampaigns() {
@@ -535,6 +809,7 @@ async function removeSelectedPlayer() {
 
 loadItems();
 loadCampaigns()
+generateObjectiveInputs();
 
   </script>
 </body>

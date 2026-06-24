@@ -8,10 +8,15 @@ const server = http.createServer(app);
 const io = new Server(server);
 app.use(express.static("public"));
 app.use(express.json());
-
-function rollD20() {
-  return Math.floor(Math.random() * 20) + 1;
-}
+const checkTypes = {
+  strength: "Strength",
+  dexterity: "Dexterity",
+  intelligence: "Intelligence",
+  wisdom: "Wisdom",
+  charisma: "Charisma",
+  constitution: "Constitution",
+  stealth: "Stealth"
+};
 
 function runCheck(player, checkType, difficulty) {
     if (!checkTypes[checkType]) {
@@ -36,6 +41,44 @@ function runCheck(player, checkType, difficulty) {
         total,
         success: total >= difficulty
     };
+}
+
+function rollStat() {
+  const result = rollDice(3, 6);
+  return result.total;
+}
+
+function generateStats() {
+  return {
+    strength: rollStat(),
+    dexterity: rollStat(),
+    intelligence: rollStat(),
+    wisdom: rollStat(),
+    charisma: rollStat(),
+    constitution: rollStat(),
+    stealth: rollStat()
+  };
+}
+
+function rollDie(sides) {
+  return Math.floor(Math.random() * sides) + 1;
+}
+
+function rollDice(amount, sides) {
+  const rolls = [];
+
+  for (let i = 0; i < amount; i++) {
+    rolls.push(rollDie(sides));
+  }
+
+  const total = rolls.reduce((sum, roll) => sum + roll, 0);
+
+  return {
+    amount,
+    sides,
+    rolls,
+    total
+  };
 }
 
 function loadQuests() {
@@ -121,6 +164,43 @@ app.get("/players", (req, res) => {
     res.json(players);
 });      
 
+app.post("/rollcheck", (req, res) => {
+  const playerId = Number(req.body.playerId);
+  const checkType = req.body.checkType;
+  const difficulty = Number(req.body.difficulty) || 10;
+
+  const players = loadPlayers();
+  const player = players.find(p => p.id === playerId);
+
+  if (!player) {
+    return res.status(404).json({ error: "Player not found" });
+  }
+
+  const check = runCheck(player, checkType, difficulty);
+
+  res.json({
+    player: player.name,
+    check: check
+  });
+});
+
+app.post("/rolldice", (req, res) => {
+  const amount = Number(req.body.amount) || 1;
+  const sides = Number(req.body.sides) || 20;
+
+  const allowedSides = [4, 6, 8, 10, 12, 20, 100];
+
+  if (!allowedSides.includes(sides)) {
+    return res.status(400).json({
+      error: "Invalid die type."
+    });
+  }
+
+  const result = rollDice(amount, sides);
+
+  res.json(result);
+});
+
 app.post("/requestjoin", (req, res) => {
     const requests = loadJoinRequests();
 
@@ -164,17 +244,22 @@ if (existingPlayer) {
 }
 
     const newPlayer = {
-        id: players.length + 1,
-        name: request.name,
-        class: request.class,
-        hp: 100,
-        level: 1,
-        xp: 0,
-        inventory: [],
-        campaignId: request.campaignId,
-        "activeQuests": [],
-        "completedQuests": []
-    };
+    id: players.length + 1,
+    name: request.name,
+    class: request.class,
+    hp: 100,
+    level: 1,
+    xp: 0,
+    statPoints: 0,
+
+    statsLocked: false,
+    statRerollsRemaining: 1,
+
+    inventory: [],
+    campaignId: request.campaignId,
+    activeQuests: [],
+    completedQuests: []
+};
 
     players.push(newPlayer);
 
@@ -208,6 +293,140 @@ app.post("/denyjoin/", (req, res) => {
         message: `${request.name}'s request was denied.`,
         requests: updatedRequests
     });
+});
+
+app.post("/generatestats", (req, res) => {
+    const playerId = Number(req.body.playerId);
+
+    const players = loadPlayers();
+
+    const player =
+        players.find(p => p.id === playerId);
+
+    if (!player) {
+        return res.status(404).json({
+            error: "Player not found"
+        });
+    }
+
+    if (player.statsLocked) {
+        return res.status(400).json({
+            error: "Stats already accepted."
+        });
+    }
+
+    player.stats = generateStats();
+
+    savePlayers(players);
+
+    io.emit("playersUpdated", players);
+
+    res.json(player);
+});
+
+app.post("/rerollstats", (req, res) => {
+    const playerId = Number(req.body.playerId);
+
+    const players = loadPlayers();
+
+    const player =
+        players.find(p => p.id === playerId);
+
+    if (!player) {
+        return res.status(404).json({
+            error: "Player not found"
+        });
+    }
+
+    if (player.statsLocked) {
+        return res.status(400).json({
+            error: "Stats already accepted."
+        });
+    }
+
+    if (player.statRerollsRemaining <= 0) {
+        return res.status(400).json({
+            error: "No rerolls remaining."
+        });
+    }
+
+    player.stats = generateStats();
+
+    player.statRerollsRemaining -= 1;
+
+    savePlayers(players);
+
+    io.emit("playersUpdated", players);
+
+    res.json(player);
+});
+
+app.post("/acceptstats", (req, res) => {
+    const playerId = Number(req.body.playerId);
+
+    const players = loadPlayers();
+
+    const player =
+        players.find(p => p.id === playerId);
+
+    if (!player) {
+        return res.status(404).json({
+            error: "Player not found"
+        });
+    }
+
+    player.statsLocked = true;
+
+    savePlayers(players);
+
+    io.emit("playersUpdated", players);
+
+    res.json({
+        message: "Stats accepted.",
+        player
+    });
+});
+
+app.post("/upgradestat", (req, res) => {
+  const playerId = Number(req.body.playerId);
+  const stat = req.body.stat;
+
+  const players = loadPlayers();
+
+  const player =
+    players.find(p => p.id === playerId);
+
+  if (!player) {
+    return res.status(404).json({
+      error: "Player not found"
+    });
+  }
+
+  if ((player.statPoints || 0) <= 0) {
+    return res.status(400).json({
+      error: "No stat points available"
+    });
+  }
+
+  if (!player.stats) {
+    return res.status(400).json({
+      error: "Player has no stats"
+    });
+  }
+
+  player.stats[stat] =
+    (player.stats[stat] || 0) + 1;
+
+  player.statPoints -= 1;
+
+  savePlayers(players);
+
+  io.emit("playersUpdated", players);
+
+  res.json({
+    message: `${stat} increased.`,
+    player
+  });
 });
 
 app.post("/removeplayer/", (req, res) => {
@@ -248,25 +467,26 @@ if (existingQuest) {
 }
 
     const newQuest = {
-        id: `QUEST-${String(quests.length + 1).padStart(3, "0")}`,
-        campaignId: req.body.campaignId,
-        title: req.body.title,
-        description: req.body.description,
-        reward: req.body.reward,
-        xpReward: Number(req.body.xpReward) || 0,
-        joinable: req.body.joinable === true
-    };
+  id: `QUEST-${String(quests.length + 1).padStart(3, "0")}`,
+  campaignId: req.body.campaignId,
+  title: req.body.title,
+  description: req.body.description,
+  reward: req.body.reward,
+  xpReward: Number(req.body.xpReward) || 0,
+  joinable: req.body.joinable === true,
+  status: "active",
+  objectives: req.body.objectives || []
+};
+  quests.push(newQuest);
 
-    quests.push(newQuest);
+saveQuests(quests);
 
-    saveQuests(quests);
+io.emit("questsUpdated", quests);
 
-    io.emit("questsUpdated", quests);
-
-    res.json({
-        message: `${newQuest.title} created.`,
-        quest: newQuest
-    });
+res.json({
+  message: `${newQuest.title} created.`,
+  quest: newQuest
+});
 });
 
 app.post("/joinquest", (req, res) => {
@@ -380,16 +600,6 @@ app.post("/choosequeststep", (req, res) => {
     if (check.error) {
     return res.status(400).json(check);
 }
-    
-    const checkTypes = {
-    strength: "Strength",
-    dexterity: "Dexterity",
-    intelligence: "Intelligence",
-    wisdom: "Wisdom",
-    charisma: "Charisma",
-    constitution: "Constitution",
-    stealth: "Stealth"
-};
 
     const nextStepId = check.success
         ? choice.successStepId
@@ -599,6 +809,7 @@ app.post("/completequest", (req, res) => {
   while (player.xp >= 100) {
   player.level += 1;
   player.xp -= 100;
+  player.statPoints = (player.statPoints || 0) + 1;
 }
 
   savePlayers(players);
@@ -616,6 +827,42 @@ app.post("/completequest", (req, res) => {
 
 io.on("connection", (socket) => {
     console.log("A Questbound device connected: ");
+});
+
+app.post("/completeobjective", (req, res) => {
+  const questId = req.body.questId;
+  const objectiveId = req.body.objectiveId;
+
+  const quests = loadQuests();
+
+  const quest = quests.find(q => q.id === questId);
+
+  if (!quest) {
+    return res.status(404).json({ error: "Quest not found" });
+  }
+
+  if (!quest.objectives) {
+    return res.status(400).json({ error: "Quest has no objectives" });
+  }
+
+  const objective = quest.objectives.find(
+    obj => obj.id === objectiveId
+  );
+
+  if (!objective) {
+    return res.status(404).json({ error: "Objective not found" });
+  }
+
+  objective.completed = true;
+
+  saveQuests(quests);
+
+  io.emit("questsUpdated", quests);
+
+  res.json({
+    message: `Objective completed: ${objective.text}`,
+    quest: quest
+  });
 });
 
 app.post("/createcampaign", (req, res) => {

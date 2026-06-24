@@ -2,10 +2,18 @@
   {
     "id": "QUEST-001",
     "campaignId": "CAMP-001",
-    "title": "quest test",
-    "description": "test quest",
-    "reward": "knowledge",
+    "title": "Test 2.0",
+    "description": "Quest",
+    "reward": "Knowledge ",
     "xpReward": 100,
-    "joinable": true
+    "joinable": true,
+    "status": "active",
+    "objectives": [
+      {
+        "id": "OBJ-001",
+        "text": "Find out",
+        "completed": true
+      }
+    ]
   }
 ]
