@@ -104,7 +104,9 @@ function rollD20() {
 function runCheck(player, checkType, difficulty) {
     const stats = player.stats || {};
 
-    const modifier = stats[checkType] || 0;
+   const baseModifier = stats[checkType] || 0;
+const equipmentBonus = getEquipmentBonus(player, checkType);
+const modifier = baseModifier + equipmentBonus;
 
     const roll = rollD20();
     const total = roll + modifier;
@@ -113,6 +115,8 @@ function runCheck(player, checkType, difficulty) {
         checkType,
         difficulty,
         roll,
+        baseModifier,
+        equipmentBonus,
         modifier,
         total,
         success: total >= difficulty
@@ -150,6 +154,26 @@ function saveCampaigns(campaigns) {
         "./campaigns.json",
         JSON.stringify(campaigns, null, 2)
     );
+}
+
+function getEquipmentBonus(player, stat) {
+  const items = loadItems();
+
+  if (!player.inventory) {
+    return 0;
+  }
+
+  let bonus = 0;
+
+  player.inventory.forEach(itemId => {
+    const item = items.find(i => i.id === itemId);
+
+    if (item && item.bonuses && item.bonuses[stat]) {
+      bonus += Number(item.bonuses[stat]);
+    }
+  });
+
+  return bonus;
 }
 
 app.get("/", (req, res) => {
@@ -631,7 +655,8 @@ app.post("/createitem", (req, res) => {
         description: req.body.description,
         type: req.body.type,
         damage: Number(req.body.damage) || 0,
-        heal: Number(req.body.heal) || 0
+        heal: Number(req.body.heal) || 0,
+        bonuses: req.body.bonuses || {}
     };
     items.push(newItem);
     saveItems(items);

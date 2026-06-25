@@ -128,6 +128,11 @@
 
     let currentPlayerId = null
 
+    function getPlayerIdFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return Number(params.get("playerId"));
+}
+
     async function requestJoin() {
       const joinRequest = {
         name: document.getElementById("joinName").value,
@@ -454,8 +459,9 @@ async function acceptCharacterStats() {
     async function loadPlayer() {
       const res = await fetch("/players");
       const players = await res.json();
-      currentPlayerId = Number(document.getElementById("playerSelect").value)
-      const player = players.find(p => p.id === currentPlayerId);
+      const urlPlayerId = getPlayerIdFromUrl();
+
+      currentPlayerId = urlPlayerId || Number(document.getElementById("playerSelect").value);      const player = players.find(p => p.id === currentPlayerId);
 
       await showPlayer(player);
       await loadQuestBoard();
@@ -519,9 +525,17 @@ async function acceptCharacterStats() {
 
 
     loadPlayerList();
-    loadCampaigns().then(() => {
-      loadQuestBoard();
-    });
+
+loadCampaigns().then(async () => {
+  loadQuestBoard();
+
+  const urlPlayerId = getPlayerIdFromUrl();
+
+  if (urlPlayerId) {
+    currentPlayerId = urlPlayerId;
+    await loadPlayer();
+  }
+});
     
   </script>
 </body>
